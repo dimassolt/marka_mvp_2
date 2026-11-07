@@ -30,6 +30,11 @@ def test_overlap_between_detectors_keeps_one_finding() -> None:
     assert [(f.category, f.start, f.end) for f in findings] == [("password", 9, 19)]
 
 
+def test_empty_words_find_nothing() -> None:
+    # A blank or "*" word would otherwise match the empty string at every position.
+    assert detect("tekst", domain="free", words=["", "*", " "]) == []
+
+
 def test_unknown_domain_is_rejected() -> None:
     with pytest.raises(UnknownDomainError):
         detect("tekst", domain="school")

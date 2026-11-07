@@ -6,6 +6,7 @@ from dataclasses import replace
 from ghost_engine.detectors.base_regex import BaseRegexDetector
 from ghost_engine.detectors.first_names import first_name_detector
 from ghost_engine.detectors.health import health_detector
+from ghost_engine.detectors.keywords import KeywordDetector
 from ghost_engine.findings import Finding, resolve_overlaps
 from ghost_engine.offsets import Utf16Offsets
 from ghost_engine.ports import Detector
@@ -24,11 +25,18 @@ class UnknownDomainError(ValueError):
     """The requested Domain has no Detectors."""
 
 
-def detect(text: str, domain: str) -> list[Finding]:
-    """Findings sorted by start, never overlapping, positions in UTF-16 units."""
+def detect(text: str, domain: str, words: Sequence[str] = ()) -> list[Finding]:
+    """Findings sorted by start, never overlapping, positions in UTF-16 units.
+
+    `words` are the user's own words (keyword syntax), found as Category "custom".
+    """
     if domain not in DOMAIN_DETECTORS:
         raise UnknownDomainError(domain)
     detectors = (*BASE_DETECTORS, *DOMAIN_DETECTORS[domain]())
+    # An empty or all-"*" entry would match the empty string everywhere.
+    words = [w for w in words if w.strip("* ")]
+    if words:
+        detectors = (*detectors, KeywordDetector(words, category="custom", confidence=0.8))
     findings = resolve_overlaps(f for d in detectors for f in d.detect(text))
     offsets = Utf16Offsets(text)
     return [
