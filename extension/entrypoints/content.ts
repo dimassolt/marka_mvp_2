@@ -141,15 +141,18 @@ export default defineContentScript({
 
     /** Hide (spec §3): each value becomes its Placeholder, typed in with the editor's own command. */
     async function hide(field: HTMLElement, targets: Underline[]) {
-      const items = targets.map(({ value, prefix }) => ({ value, prefix }));
+      // The user typed since the scan: a value that has moved is left for the next scan. Checked
+      // before asking for Placeholders, so the Vault only gets values that are really hidden.
+      const before = joined(piecesOf(field));
+      const inPlace = targets.filter((u) => before.slice(u.start, u.end) === u.value);
+      const items = inPlace.map(({ value, prefix }) => ({ value, prefix }));
       const placeholders: string[] = await browser.runtime.sendMessage({ type: 'placeholders', items, save: true });
       if (!Array.isArray(placeholders)) throw new Error('no Placeholders');
       const text = joined(piecesOf(field));
       // Last first, so each replacement leaves the offsets before it as they were.
-      const order = targets.map((u, i) => ({ u, placeholder: placeholders[i] }));
+      const order = inPlace.map((u, i) => ({ u, placeholder: placeholders[i] }));
       order.sort((a, b) => b.u.start - a.u.start);
       for (const { u, placeholder } of order) {
-        // The user typed since the scan: this value has moved, so leave it for the next scan.
         if (!placeholder || text.slice(u.start, u.end) !== u.value) continue;
         replace(field, piecesOf(field), u.start, u.end, placeholder);
       }
