@@ -64,3 +64,30 @@ def _append_trimmed(text: str, start: int, end: int, spans: list[Span]) -> None:
         end -= 1
     if start < end:
         spans.append((start, end))
+
+
+def chunk_spans(text: str, max_chars: int) -> list[Span]:
+    """Pack whole sentences into chunks of at most `max_chars`, for models with a
+    limited input window (GLiNER). A longer sentence is cut at whitespace, and a
+    longer word is cut hard."""
+    pieces = [piece for span in split_sentences(text) for piece in _cut(text, span, max_chars)]
+    chunks: list[Span] = []
+    for start, end in pieces:
+        if chunks and end - chunks[-1][0] <= max_chars:
+            chunks[-1] = (chunks[-1][0], end)
+        else:
+            chunks.append((start, end))
+    return chunks
+
+
+def _cut(text: str, span: Span, max_chars: int) -> list[Span]:
+    start, end = span
+    pieces: list[Span] = []
+    while end - start > max_chars:
+        limit = start + max_chars
+        space = max((i for i in range(start + 1, limit + 1) if text[i].isspace()), default=None)
+        cut = space if space is not None else limit
+        _append_trimmed(text, start, cut, pieces)
+        start = cut
+    _append_trimmed(text, start, end, pieces)
+    return pieces
