@@ -49,13 +49,25 @@ export const sites = storage.defineItem<string[]>('local:sites', {
   fallback: ['*'],
 });
 
-/** Adds a site. Empty sites and duplicates are ignored. */
+/**
+ * Adds a site by its name only, as a tab's hostname has it: `https://Claude.ai/new` → `claude.ai`.
+ * Empty sites and duplicates are ignored.
+ */
 export async function addSite(rawSite: string): Promise<void> {
-  const site = rawSite.trim();
+  const site = siteName(rawSite.trim());
   const list = await sites.getValue();
   if (!site || list.includes(site)) return;
 
   await sites.setValue([...list, site]);
+}
+
+function siteName(site: string): string {
+  if (!site || site === '*') return site;
+  try {
+    return new URL(site.includes('://') ? site : `https://${site}`).hostname;
+  } catch {
+    return site;
+  }
 }
 
 export async function removeSite(site: string): Promise<void> {
@@ -67,7 +79,27 @@ export const pausedSites = storage.defineItem<string[]>('local:pausedSites', {
   fallback: [],
 });
 
+/** Ghost Agent checks a site covered by `*` or listed by name, unless it was switched off there. */
+export function isSiteOn(hostname: string, siteList: string[], paused: string[]): boolean {
+  return !paused.includes(hostname) && (siteList.includes('*') || siteList.includes(hostname));
+}
+
 export async function setSitePaused(hostname: string, paused: boolean): Promise<void> {
   const others = (await pausedSites.getValue()).filter((h) => h !== hostname);
   await pausedSites.setValue(paused ? [...others, hostname] : others);
+}
+
+/**
+ * The popup switch. Off: the site leaves Sites, and if `*` still covers it, it goes on the Off list.
+ * On: the site leaves the Off list, and joins Sites if nothing there covers it.
+ */
+export async function setSiteOn(hostname: string, on: boolean): Promise<void> {
+  const list = await sites.getValue();
+  if (on) {
+    await setSitePaused(hostname, false);
+    if (!isSiteOn(hostname, list, [])) await addSite(hostname);
+  } else {
+    await removeSite(hostname);
+    if (list.includes('*')) await setSitePaused(hostname, true);
+  }
 }

@@ -6,10 +6,12 @@ import {
   addWord,
   createDomain,
   customDomains,
+  isSiteOn,
   pausedSites,
   removeSite,
   removeWord,
   selectedDomain,
+  setSiteOn,
   setSitePaused,
   sites,
 } from '@/utils/popup-settings';
@@ -59,11 +61,12 @@ export function App() {
   return <Main onNewDomain={() => setView('new-domain')} onSettings={() => setView('settings')} />;
 }
 
-function Header({ running }: { running: boolean }) {
+/** The ghost wears sunglasses while it checks this site; the chip shows the Engine. */
+function Header({ running, on = running }: { running: boolean; on?: boolean }) {
   return (
     <header class="header">
       <img
-        src={running ? '/icon/active/128.png' : '/icon/inactive/128.png'}
+        src={on ? '/icon/active/128.png' : '/icon/inactive/128.png'}
         width={28}
         height={28}
         alt=""
@@ -91,14 +94,15 @@ function SubHeader({ title, onBack }: { title: string; onBack: () => void }) {
 function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings: () => void }) {
   const domain = useItem(selectedDomain) ?? 'free';
   const domains = useItem(customDomains) ?? {};
+  const siteList = useItem(sites) ?? [];
   const paused = useItem(pausedSites) ?? [];
   const host = useHostname();
-  const on = !paused.includes(host);
+  const on = isSiteOn(host, siteList, paused);
   const words = domains[domain];
 
   return (
     <main class="popup">
-      <Header running />
+      <Header running on={on} />
 
       <div class="site">
         <span class="site__text">
@@ -112,7 +116,7 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
           aria-checked={on}
           aria-label={`On for ${host}`}
           disabled={!host}
-          onClick={() => setSitePaused(host, on)}
+          onClick={() => setSiteOn(host, !on)}
         >
           <span class="switch__knob" />
         </button>
@@ -296,6 +300,7 @@ function NewDomain({ onBack }: { onBack: () => void }) {
 
 function Settings({ onBack }: { onBack: () => void }) {
   const list = useItem(sites) ?? [];
+  const paused = useItem(pausedSites) ?? [];
   const [site, setSite] = useState('');
 
   const submit = async (e: Event) => {
@@ -352,6 +357,32 @@ function Settings({ onBack }: { onBack: () => void }) {
           </button>
         </form>
       </section>
+      {paused.length > 0 && (
+        <section class="section">
+          <div class="sites-head">
+            <h2 class="heading">Off on</h2>
+            <p class="hint">Switched off in the popup, even though * covers them.</p>
+          </div>
+          <ul class="sites">
+            {paused.map((s) => (
+              <li key={s} class="site-item">
+                <span>{s}</span>
+                <button
+                  type="button"
+                  class="bare-btn bare-btn--muted"
+                  aria-label={`Remove ${s} from Off on`}
+                  onClick={() => setSitePaused(s, false)}
+                >
+                  <Icon size={14} stroke={2.25}>
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </Icon>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }
