@@ -1,7 +1,11 @@
 import { checkEngine, detect, iconPathsFor, rephrase } from '@/utils/engine-status';
+import { openOnboardingOnInstall } from '@/utils/onboarding';
 import { remember, type Vault } from '@/utils/vault';
 
 export default defineBackground(() => {
+  // First install: welcome the user with the onboarding tab.
+  browser.runtime.onInstalled.addListener(openOnboardingOnInstall);
+
   browser.runtime.onMessage.addListener((message, sender) => {
     // Content scripts can't reach the Engine on localhost, so they ask here (docs/spec.md §3).
     if (message?.type === 'detect') return detect(message.text);

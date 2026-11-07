@@ -757,3 +757,21 @@ svg {
     transition: none !important;
   }
 }
+
+/* Text link: the welcome tour in Settings */
+
+.link-btn {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-2);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-btn:hover {
+  color: var(--color-ink);
+}
