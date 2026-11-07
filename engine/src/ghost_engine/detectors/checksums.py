@@ -28,3 +28,16 @@ def bank_account_valid(digits: str) -> bool:
     if len(digits) != 11 or not digits.isdigit():
         return False
     return _mod11_check_digit(digits[:10], _MOD11_WEIGHTS) == int(digits[10])
+
+
+def luhn_valid(digits: str) -> bool:
+    """Luhn checksum, used by payment cards."""
+    if not digits.isdigit():
+        return False
+    total = 0
+    for i, ch in enumerate(reversed(digits)):
+        d = int(ch)
+        if i % 2 == 1:
+            d = d * 2 - 9 if d > 4 else d * 2
+        total += d
+    return total % 10 == 0

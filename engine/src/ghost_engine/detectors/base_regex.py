@@ -38,6 +38,13 @@ def _bank_account(match: str) -> str | None:
     return "bank_account" if checksums.bank_account_valid(_digits(match)) else None
 
 
+def _payment_card(match: str) -> str | None:
+    digits = _digits(match)
+    if 13 <= len(digits) <= 19 and checksums.luhn_valid(digits):
+        return "payment_card"
+    return None
+
+
 _RULES: tuple[_Rule, ...] = (
     _Rule(
         pattern=re.compile(r"(?<!\w)\d{6} ?\d{5}(?!\w)"),
@@ -49,6 +56,12 @@ _RULES: tuple[_Rule, ...] = (
         pattern=re.compile(r"(?<!\w)\d{4}([. ]?)\d{2}\1\d{5}(?!\w)"),
         classify=_bank_account,
         confidence=0.9,
+    ),
+    _Rule(
+        # 13–19 digits, optionally grouped by single spaces or dashes.
+        pattern=re.compile(r"(?<!\w)\d(?:[ -]?\d){12,18}(?!\w)"),
+        classify=_payment_card,
+        confidence=0.95,
     ),
 )
 

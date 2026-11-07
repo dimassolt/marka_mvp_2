@@ -51,3 +51,21 @@ def test_bank_account_with_failed_checksum_is_not_found() -> None:
 
 def test_bank_account_with_mixed_separators_is_not_found() -> None:
     assert found("konto 8601.11 17947") == []
+
+
+# payment_card ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "card", ["4111111111111111", "4111 1111 1111 1111", "4111-1111-1111-1111", "378282246310005"]
+)
+def test_payment_card_with_valid_luhn_is_found(card: str) -> None:
+    assert found(f"kort {card}, takk") == [("payment_card", card)]
+
+
+def test_payment_card_with_failed_luhn_is_not_found() -> None:
+    assert found("kort 4111 1111 1111 1112") == []
+
+
+def test_twelve_digits_are_too_short_for_a_card() -> None:
+    assert found("ref 4111 1111 1119") == []
