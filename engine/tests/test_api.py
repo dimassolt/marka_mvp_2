@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from ghost_engine.api import app
@@ -20,15 +21,17 @@ def test_detect_returns_findings_in_spec_shape() -> None:
     }
 
 
-def test_demo_note_gives_the_eight_findings_of_acceptance_check_1(demo_note: str) -> None:
-    # docs/spec.md §4 check 1: the Ghost bar shows 8.
+@pytest.mark.gliner
+def test_demo_note_gives_the_nine_findings_of_acceptance_check_1(demo_note: str) -> None:
+    # docs/spec.md §4 check 1: the Ghost bar shows 9.
     response = client.post("/detect", json={"text": demo_note, "domain": "health"})
     findings = response.json()["findings"]
 
     assert [(f["category"], demo_note[f["start"] : f["end"]]) for f in findings] == [
-        ("person_name", "Kari"),
+        ("person_name", "Kari Nordmann"),
         ("fodselsnummer", "01019000083"),
         ("person_name", "Kari"),
+        ("location", "Bærum"),
         ("health", "diabetes"),
         ("health", "sykemeldt"),
         ("health", "insulin"),
