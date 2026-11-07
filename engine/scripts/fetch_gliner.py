@@ -1,18 +1,16 @@
 """Download the pinned GLiNER model into engine/models/ (about 600 MB).
 
 Run from engine/: uv run python scripts/fetch_gliner.py
-Like fetch_first_names.py, it only runs by hand. The Engine loads the model from
-disk and never uses the network itself (ADR-0001).
+The install scripts run it. The popup's Download model button does the same through
+POST /model/download (ADR-0004). Detection loads the model from disk only (ADR-0001).
 """
 
-from huggingface_hub import snapshot_download
-
-from ghost_engine.detectors.gliner import MODEL_FILES, MODEL_ID, MODEL_REVISION, model_dir
+from ghost_engine.detectors.gliner import MODEL_ID, download_model, model_dir
 
 
 def main() -> None:
     path = model_dir()
-    snapshot_download(MODEL_ID, revision=MODEL_REVISION, allow_patterns=MODEL_FILES, local_dir=path)
+    download_model(path)
     print(f"{MODEL_ID} -> {path}")
 
 
