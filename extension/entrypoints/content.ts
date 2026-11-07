@@ -137,6 +137,7 @@ export default defineContentScript({
     async function hide(field: HTMLElement, targets: Underline[]) {
       const items = targets.map(({ value, prefix }) => ({ value, prefix }));
       const placeholders: string[] = await browser.runtime.sendMessage({ type: 'placeholders', items, save: true });
+      if (!Array.isArray(placeholders)) throw new Error('no Placeholders');
       const text = joined(piecesOf(field));
       // Last first, so each replacement leaves the offsets before it as they were.
       const order = targets.map((u, i) => ({ u, placeholder: placeholders[i] }));
@@ -194,11 +195,16 @@ export default defineContentScript({
       ui.hideCard();
     };
 
-    ui.onAction((action) => {
-      if (action === 'hide' && open) hide(open.field, [open]);
-      if (action === 'ignore' && open) ignore(open.field, [open]);
+    ui.onAction(async (action) => {
       const all = current ? (underlined.get(current) ?? []) : [];
-      if (action === 'hide-all' && current) hide(current, all);
+      try {
+        if (action === 'hide' && open) await hide(open.field, [open]);
+        if (action === 'hide-all' && current) await hide(current, all);
+      } catch {
+        // E.g. the extension was reloaded. The Card or menu stays, so the user knows nothing was hidden.
+        return ui.showError();
+      }
+      if (action === 'ignore' && open) ignore(open.field, [open]);
       if (action === 'ignore-all' && current) ignore(current, all);
       closeCard();
       ui.closeMenu();
@@ -376,11 +382,13 @@ function createUi() {
         <button type="button" class="secondary" disabled title="Coming soon">Rephrase</button>
         <button type="button" class="text" data-action="ignore">Ignore</button>
       </div>
+      <p class="error" role="alert" hidden>Couldn't hide. Try again.</p>
     </div>
     <div class="bar" hidden>
       <div class="menu" role="menu" aria-label="Ghost bar" hidden>
         <button type="button" role="menuitem" data-action="hide-all">Hide all<span class="count"></span></button>
         <button type="button" role="menuitem" data-action="ignore-all">Ignore all<span class="count"></span></button>
+        <p class="error" role="alert" hidden>Couldn't hide. Try again.</p>
       </div>
       <button type="button" class="tab" aria-expanded="false"><span class="count"></span>to check</button>
     </div>`;
@@ -392,7 +400,10 @@ function createUi() {
   const bar = $('.bar');
   const menu = $('.menu');
   const tab = $('.tab');
+  const errors = root.querySelectorAll<HTMLElement>('.error');
+  const showErrors = (show: boolean) => errors.forEach((e) => (e.hidden = !show));
   const setMenu = (isOpen: boolean) => {
+    if (menu.hidden !== !isOpen) showErrors(false);
     menu.hidden = !isOpen;
     tab.setAttribute('aria-expanded', String(isOpen));
   };
@@ -414,7 +425,12 @@ function createUi() {
       $('.name').textContent = u.name;
       $('.value').textContent = u.value;
       stamp.hidden = true;
+      showErrors(false);
       card.hidden = false;
+    },
+    /** Under the Card's buttons and the menu's: only the one on screen is seen. */
+    showError() {
+      showErrors(true);
     },
     stamp(placeholder: string) {
       stamp.textContent = `hide as ${placeholder}`;
@@ -476,6 +492,8 @@ const UI_STYLES = `
   .secondary { padding: 0 12px; border: 1px solid var(--color-rule); background: var(--color-paper-2); color: var(--color-ink); box-shadow: var(--shadow-mould-clear); }
   .text { padding: 0 6px; border: 0; background: transparent; color: var(--color-muted); }
   .text:hover { color: var(--color-ink); }
+  .error { margin: 0; padding: 0 16px 14px; color: var(--color-cat-id-ink); font-size: var(--text-xs); }
+  .menu .error { padding: 4px 10px; }
 
   .bar { position: fixed; display: flex; flex-direction: column; align-items: flex-end; font-family: var(--font-body); }
   .tab {
