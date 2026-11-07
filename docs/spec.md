@@ -71,7 +71,8 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 ### Scanning
 
 - The Extension scans every editable field (`contenteditable` or `<textarea>`) on any site. V1 is tested only on chatgpt.com, whose input is a `<textarea>`.
-- A scan sends the whole field text to `/detect`: 300 ms after the last keystroke, or immediately on paste.
+- A scan sends the whole field text to `/detect`: 1 s after the last keystroke, or immediately on paste.
+- The background worker remembers the answers to the last 50 requests (text, Domain and words), in memory only. The same request again gets the remembered answer without asking the Engine. A failed call is not remembered.
 - Only the background worker calls the Engine. Content scripts ask it via a message, because a page like chatgpt.com can't reach localhost.
 
 ### Underlines
