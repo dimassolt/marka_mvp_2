@@ -17,6 +17,8 @@ class _Rule:
     classify: Classifier
     confidence: float
     group: int = 0
+    shrink: bool = False
+    """If the whole match is rejected, retry shorter prefixes ending on a word."""
 
 
 def _digits(text: str) -> str:
@@ -45,6 +47,10 @@ def _payment_card(match: str) -> str | None:
     return None
 
 
+def _iban(match: str) -> str | None:
+    return "iban" if checksums.iban_valid(match) else None
+
+
 _RULES: tuple[_Rule, ...] = (
     _Rule(
         pattern=re.compile(r"(?<!\w)\d{6} ?\d{5}(?!\w)"),
@@ -63,6 +69,13 @@ _RULES: tuple[_Rule, ...] = (
         classify=_payment_card,
         confidence=0.95,
     ),
+    _Rule(
+        # Country code, 2 check digits, then 11–30 letters or digits in any grouping.
+        pattern=re.compile(r"(?<!\w)[A-Z]{2}\d{2}(?: ?[A-Z0-9]){11,30}(?!\w)"),
+        classify=_iban,
+        confidence=0.95,
+        shrink=True,
+    ),
 )
 
 
@@ -73,11 +86,26 @@ class BaseRegexDetector:
         findings: list[Finding] = []
         for rule in _RULES:
             for match in rule.pattern.finditer(text):
-                category = rule.classify(match.group(rule.group))
-                if category is None:
-                    continue
                 start, end = match.span(rule.group)
-                findings.append(Finding(start, end, category, rule.confidence))
+                accepted = self._accept(rule, text[start:end])
+                if accepted is not None:
+                    category, length = accepted
+                    findings.append(Finding(start, start + length, category, rule.confidence))
         # A valid fødselsnummer is also a valid account number; the overlap rule
         # keeps the higher-confidence one.
         return resolve_overlaps(findings)
+
+    @staticmethod
+    def _accept(rule: _Rule, candidate: str) -> tuple[str, int] | None:
+        """(Category, accepted length) for the candidate or its longest valid prefix."""
+        category = rule.classify(candidate)
+        if category is not None:
+            return category, len(candidate)
+        if rule.shrink:
+            # Cut back to each earlier space: "NO93 8601 1117 947 OK" → "NO93 8601 1117 947".
+            for cut in range(len(candidate) - 1, 0, -1):
+                if candidate[cut] == " ":
+                    category = rule.classify(candidate[:cut])
+                    if category is not None:
+                        return category, cut
+        return None

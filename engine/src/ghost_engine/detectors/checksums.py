@@ -41,3 +41,13 @@ def luhn_valid(digits: str) -> bool:
             d = d * 2 - 9 if d > 4 else d * 2
         total += d
     return total % 10 == 0
+
+
+def iban_valid(iban: str) -> bool:
+    """IBAN mod-97: move the first four characters to the end, letters become 10–35."""
+    compact = iban.replace(" ", "").upper()
+    if len(compact) < 15 or len(compact) > 34 or not compact.isalnum():
+        return False
+    rearranged = compact[4:] + compact[:4]
+    number = "".join(str(int(ch, 36)) for ch in rearranged)
+    return int(number) % 97 == 1

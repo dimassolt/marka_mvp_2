@@ -69,3 +69,22 @@ def test_payment_card_with_failed_luhn_is_not_found() -> None:
 
 def test_twelve_digits_are_too_short_for_a_card() -> None:
     assert found("ref 4111 1111 1119") == []
+
+
+# iban --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "iban",
+    ["NO9386011117947", "NO93 8601 1117 947", "GB82WEST12345698765432", "GB82 WEST 1234 5698 7654 32"],
+)
+def test_iban_with_valid_mod97_is_found(iban: str) -> None:
+    assert found(f"IBAN: {iban}.") == [("iban", iban)]
+
+
+def test_iban_with_failed_mod97_is_not_found() -> None:
+    assert found("IBAN NO9386011117948") == []
+
+
+def test_iban_does_not_swallow_a_following_capitalised_word() -> None:
+    assert found("NO93 8601 1117 947 OK") == [("iban", "NO93 8601 1117 947")]
