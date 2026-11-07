@@ -64,6 +64,12 @@ _SECRET = re.compile(
     r")(?![\w-])"
 )
 
+# Group 1 is the value only. It stops before trailing sentence punctuation.
+_PASSWORD = re.compile(
+    r"(?<!\w)(?:password|passord|pwd|pw)[ \t]*:[ \t]*(\S+?)(?=[.,;:!?)\]\"']*(?:\s|$))",
+    re.IGNORECASE,
+)
+
 
 _RULES: tuple[_Rule, ...] = (
     _Rule(
@@ -91,6 +97,7 @@ _RULES: tuple[_Rule, ...] = (
         shrink=True,
     ),
     _Rule(pattern=_SECRET, classify=_always("secret"), confidence=0.95),
+    _Rule(pattern=_PASSWORD, classify=_always("password"), confidence=0.9, group=1),
 )
 
 

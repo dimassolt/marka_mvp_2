@@ -107,3 +107,28 @@ def test_secret_token_is_found(token: str) -> None:
 @pytest.mark.parametrize("text", ["sk-ole er gøy", "risk-free", "AKIA alone", "eyJ.only"])
 def test_secret_lookalikes_are_not_found(text: str) -> None:
     assert found(text) == []
+
+
+# password ----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "value"),
+    [
+        ("password: Hunter2!x", "Hunter2!x"),
+        ("Passord:sommer2026", "sommer2026"),
+        ("login pwd: q9#Lm", "q9#Lm"),
+        ("PW: abc123", "abc123"),
+    ],
+)
+def test_password_value_after_label_is_found_without_the_label(text: str, value: str) -> None:
+    assert found(text) == [("password", value)]
+
+
+def test_password_drops_sentence_punctuation_at_the_end() -> None:
+    assert found("Mitt passord: sommer2026. Takk") == [("password", "sommer2026")]
+
+
+@pytest.mark.parametrize("text", ["glemt passordet mitt", "passord: ", "snowpw: x"])
+def test_password_without_a_labelled_value_is_not_found(text: str) -> None:
+    assert found(text) == []
