@@ -247,17 +247,12 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
 
 function BuiltIn({ domain }: { domain: string }) {
   const name = isBuiltInDomain(domain) ? domain : 'free';
-  const { label, about } = BUILT_IN_DOMAIN_INFO[name];
-  const free = name === 'free';
   return (
     <section class="section">
       <div class="heading-row">
-        <h2 class={free ? 'heading' : 'heading heading--domain'}>{label}</h2>
         <span class="pill">Built-in</span>
       </div>
-      <p class="body">{about}</p>
-      {!free && <p class="hint">Plus the Base checks: fnr, card, email, phone, names.</p>}
-      <p class="hint">Want your own words? Make a Domain with the plus button.</p>
+      <p class="body">{BUILT_IN_DOMAIN_INFO[name].about}</p>
     </section>
   );
 }

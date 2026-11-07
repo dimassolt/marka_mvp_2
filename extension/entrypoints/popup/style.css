@@ -224,13 +224,6 @@ svg {
   font-weight: 500;
 }
 
-.heading--domain {
-  text-decoration: underline wavy var(--color-cat-domain);
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 4px;
-  text-decoration-skip-ink: none;
-}
-
 .pill {
   padding: 2px 8px;
   border: var(--rule-hair) solid var(--color-rule-2);
