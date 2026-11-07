@@ -135,6 +135,17 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 - Rephrase shows "Engine not running" in the Card and changes nothing.
 - There is no backup detection in the Extension.
 
+### Onboarding
+
+- On a fresh install the Extension opens `onboarding.html` in a new tab. It does not open on an update, or once onboarding is done (`onboardingDone`). Settings in the popup has "Take the welcome tour again".
+- Five steps, with Back and a "n of 5" progress:
+  1. **Welcome:** what Ghost Agent does, and the local promise: text is checked on this computer only, hidden values live in memory only, and nothing changes until the user clicks. "Skip the tour" finishes onboarding.
+  2. **Engine:** a live status, re-checked every 2 s. While the Engine is down it shows the start command; the user can go on without it.
+  3. **Domain:** the Base checks, then cards for Free, Health, Education and "Make your own" (name, then words). Every other built-in Domain and the user's own Domains are in a "More Domains" list, so the page keeps its size as Domains are added. Choosing one sets `selectedDomain`, the same setting the popup uses.
+  4. **Try it:** a practice field with real underline colours, the Card (Hide, Ignore; Rephrase is explained but disabled) and the Ghost bar (Hide all, Ignore all), a hint that Ctrl+Z puts a hidden value back in a chat, and a Restore before/after. With the Engine running, the user's own text is checked with the selected Domain; without it, a fixed example is shown. Nothing typed here is saved.
+  5. **Done:** where Ghost Agent works, "Everywhere" (`*`, the default) or "Only sites I choose" (starts from chatgpt.com, claude.ai and gemini.google.com; the same `sites` setting as the popup), then pinning the Extension and the chosen Domain. "Done" sets `onboardingDone` and closes the tab.
+- The screens only use `utils/` (settings and Engine calls), so the desktop App can reuse them with its own versions of those modules.
+
 ## 4. Acceptance criteria
 
 Every check below uses the demo note in section 5, typed or pasted into ChatGPT's input in Opera, with the Engine running.
