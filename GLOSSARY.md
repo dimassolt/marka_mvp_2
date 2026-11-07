@@ -22,6 +22,10 @@ _Avoid_: scanner, recognizer, engine
 A customer sector with its own idea of what is sensitive, such as Health or School. A Domain has its own Categories, keyword lists and rephrase instructions. One Domain is active at a time.
 _Avoid_: profile, vertical, preset, mode
 
+**Free Domain**:
+The default Domain, used when no other Domain is chosen. It has no Categories or keyword lists of its own, so it gives Base Findings only.
+_Avoid_: default profile, generic mode, none
+
 **Base Finding**:
 A Finding whose Category is sensitive in every Domain, such as fødselsnummer, email, payment card or a person's name.
 _Avoid_: generic finding, PII finding

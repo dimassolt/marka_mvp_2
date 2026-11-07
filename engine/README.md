@@ -9,6 +9,10 @@ uv run pytest            # tests
 uv run ruff check . && uv run ruff format --check . && uv run mypy .
 ```
 
+## Domains
+
+`POST /detect` takes an optional `domain`. `free` is the default and runs the Base Detectors only. `health` adds the Health keyword list. Add a Domain in `DOMAIN_DETECTORS` in `service.py`.
+
 ## Detectors
 
 - `detectors/base_regex.py`: Base Categories with a fixed shape (fødselsnummer, d-nummer, bank account, payment card, IBAN, secret, password, email, phone). Checksums are in `detectors/checksums.py`. A plain 11-digit number can pass both the fødselsnummer and the account checksum; words like "konto" or "fnr" in the 40 characters before it decide which.

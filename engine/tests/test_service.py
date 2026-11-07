@@ -33,3 +33,13 @@ def test_overlap_between_detectors_keeps_one_finding() -> None:
 def test_unknown_domain_is_rejected() -> None:
     with pytest.raises(UnknownDomainError):
         detect("tekst", domain="school")
+
+
+def test_free_domain_gives_base_findings_only() -> None:
+    # docs/spec.md §2: Free finds person_name and fodselsnummer, but no health.
+    findings = detect("Kari har diabetes, fnr 01019000083", domain="free")
+
+    assert findings == [
+        Finding(start=0, end=4, category="person_name", confidence=0.6),
+        Finding(start=23, end=34, category="fodselsnummer", confidence=0.99),
+    ]

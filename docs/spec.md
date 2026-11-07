@@ -48,7 +48,8 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 - `start` is inclusive and `end` is exclusive, both counted **in UTF-16 units, the way JavaScript counts**. Example: in `"👋 01019000083"` the fødselsnummer is at 3–14, even though Python sees it at 2–13.
 - Findings are sorted by `start` and never overlap. When two Detectors' Findings overlap, the longer one wins; for equal length, the higher `confidence` wins.
 - Each Detector sets its own `confidence`. It is only used to break overlap ties.
-- `domain` is `"health"` in V1. An unknown domain returns `422`.
+- `domain` is `"free"` or `"health"` in V1. It is optional; without it the Engine uses `"free"`. An unknown domain returns `422`.
+- The **Free** Domain finds Base Findings only. Example: `{ "text": "Kari har diabetes, fnr 01019000083" }` gives `person_name` at 0–4 and `fodselsnummer` at 23–34, but no `health`.
 
 ### `POST /rephrase`
 
