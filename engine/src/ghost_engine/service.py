@@ -4,12 +4,13 @@ from collections.abc import Callable, Sequence
 from dataclasses import replace
 
 from ghost_engine.detectors.base_regex import BaseRegexDetector
+from ghost_engine.detectors.first_names import first_name_detector
 from ghost_engine.detectors.health import health_detector
 from ghost_engine.findings import Finding, resolve_overlaps
 from ghost_engine.offsets import Utf16Offsets
 from ghost_engine.ports import Detector
 
-BASE_DETECTORS: tuple[Detector, ...] = (BaseRegexDetector(),)
+BASE_DETECTORS: tuple[Detector, ...] = (BaseRegexDetector(), first_name_detector())
 
 DOMAIN_DETECTORS: dict[str, Callable[[], Sequence[Detector]]] = {
     "health": lambda: (health_detector(),),

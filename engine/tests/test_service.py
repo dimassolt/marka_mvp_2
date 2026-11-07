@@ -4,11 +4,12 @@ from ghost_engine.findings import Finding
 from ghost_engine.service import UnknownDomainError, detect
 
 
-def test_spec_example_has_health_and_fodselsnummer_in_order() -> None:
-    # docs/spec.md §2 (person_name comes with the first-name Detector).
+def test_spec_example_matches_the_spec_response() -> None:
+    # docs/spec.md §2, POST /detect example.
     findings = detect("Kari har diabetes, fnr 01019000083", domain="health")
 
     assert findings == [
+        Finding(start=0, end=4, category="person_name", confidence=0.6),
         Finding(start=9, end=17, category="health", confidence=0.8),
         Finding(start=23, end=34, category="fodselsnummer", confidence=0.99),
     ]
