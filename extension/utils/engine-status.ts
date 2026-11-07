@@ -7,8 +7,8 @@ export function iconPathsFor(running: boolean): Record<number, string> {
 }
 
 /**
- * Whether the Engine is running. For now the popup's test toggle sets it;
- * later the GET /health check will.
+ * Whether the Engine is running. The popup only reads it; nothing sets it yet.
+ * Later the GET /health check will.
  */
 export const engineRunning = storage.defineItem<boolean>('local:engineRunning', {
   fallback: false,

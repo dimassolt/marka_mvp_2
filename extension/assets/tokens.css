@@ -1,0 +1,57 @@
+/* Hallmark · theme: dose (by request) · dose: ink, cobalt stamp · shape: app screen · genre: modern-minimal · v2.0.0 */
+/* Ghost Agent design tokens. Source of truth for colours, type, radii and motion; see docs/design.md. */
+/* :host lets the Card and Ghost bar read the same tokens inside their Shadow DOM. */
+:root, :host {
+  /* Paper and ink */
+  --color-paper: oklch(97.6% 0.011 88);   /* ground: popup body, artboard */
+  --color-paper-2: oklch(99.4% 0.016 84); /* label: Card, popup panels */
+  --color-paper-3: oklch(95% 0.012 85);   /* sunk: site row, previews, menus */
+  --color-ink: oklch(21% 0.01 60);
+  --color-ink-2: oklch(31% 0.01 60);
+  --color-muted: oklch(46% 0.015 60);
+  --color-rule: oklch(88% 0.015 80);
+  --color-rule-2: oklch(80% 0.015 80);
+
+  /* Controls: black ink, moulded */
+  --color-accent: oklch(24% 0.012 60);
+  --color-accent-deep: oklch(12% 0.01 60);
+  --color-accent-ink: oklch(99% 0.005 80);
+  --color-glint: oklch(100% 0 0);
+  --color-bevel: oklch(100% 0 0 / 0.25);
+
+  /* The one spot colour: cobalt stamp */
+  --color-stamp: oklch(48% 0.17 262);
+  --color-stamp-soft: oklch(93% 0.035 262);
+  --color-focus: var(--color-stamp);
+
+  /* Category underlines (spec §1 colour column) */
+  --color-cat-id: oklch(55% 0.17 25);          /* red: fødselsnummer, card, IBAN, secret, password */
+  --color-cat-id-soft: oklch(93% 0.035 22);
+  --color-cat-id-ink: oklch(45% 0.16 25);
+  --color-cat-contact: oklch(64% 0.14 62);     /* amber: name, email, phone */
+  --color-cat-domain: oklch(50% 0.09 200);     /* teal: health, your own words, unknown ids */
+  --color-cat-domain-soft: oklch(93.5% 0.03 200);
+  --color-cat-domain-ink: oklch(38% 0.07 200);
+
+  /* Type */
+  --font-display: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-outlier: "DM Mono", ui-monospace, monospace;
+
+  /* Shape and depth */
+  --radius-card: 10px;
+  --radius-surface: 14px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+  --rule-hair: 1px;
+  --rule-tear: 1.5px;
+  --shadow-lift: 0 1px 1px oklch(30% 0.02 60 / 0.10), 8px 18px 28px -14px oklch(36% 0.03 60 / 0.28), 18px 40px 60px -30px oklch(40% 0.04 60 / 0.26);
+  --shadow-mould: inset 0 1px 0 var(--color-bevel), 0 3px 0 var(--color-accent-deep);
+  --shadow-mould-clear: inset 0 1px 0 var(--color-glint), 0 3px 0 var(--color-rule);
+
+  /* Scale (Hallmark app scope) */
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px;
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.2rem; --text-xl: 1.44rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 120ms; --dur-short: 220ms;
+}
