@@ -1,9 +1,9 @@
-import { checkEngine, engineRunning, iconPathsFor } from '@/utils/engine-status';
+import { checkEngine, detect, engineRunning, iconPathsFor } from '@/utils/engine-status';
 
 export default defineBackground(() => {
+  // Content scripts can't reach the Engine on localhost, so they ask here (docs/spec.md §3).
   browser.runtime.onMessage.addListener((message) => {
-    if (message === 'hello') return Promise.resolve('Hello from the background worker');
-  });
+    if (message?.type === 'detect') return detect(message.text);  });
 
   const showIcon = (running: boolean) => browser.action.setIcon({ path: iconPathsFor(running) });
   engineRunning.getValue().then(showIcon);
