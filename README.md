@@ -15,7 +15,7 @@ First time on a new machine, from the repo folder:
 - macOS or Linux: `./scripts/install.sh`
 - Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File scripts\install.ps1`
 
-The script installs uv if it is missing, the Engine's Python packages, the GLiNER model (about 600 MB, downloaded once) and the Extension's npm packages, then runs the Engine tests. It needs Node 22 or newer. On Windows it also needs Rust from [rustup.rs](https://rustup.rs), because the GLiNER runtime is built from source there.
+The script installs uv if it is missing, the Engine's Python packages, the GLiNER model (about 600 MB, downloaded once) and the Extension's npm packages, then runs the Engine tests. It needs Node 22 or newer. On Windows it also needs Rust from [rustup.rs](https://rustup.rs), because the GLiNER runtime is built from source there. If the model is missing later, the popup offers a **Download model** button that does the same download through the Engine.
 
 Then start both with `make start` (macOS or Linux), or `uv run ghost-engine` in `engine/` and `npm run dev` in `extension/`.
 

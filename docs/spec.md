@@ -30,7 +30,7 @@ This table is the contract between Engine and Extension. The Engine returns the 
 
 A Category `id` the Extension doesn't know is drawn purple, and Hide gives it the Placeholder prefix `DATA`.
 
-The GLiNER Detector runs `onnx-community/gliner_multi-v2.1` (fp16 ONNX, through fast_gliner) on chunks of whole sentences, at most 1000 characters each. It keeps an entity only if it scores at least 0.8, contains a capital letter and isn't a pronoun (`Hun`, `henne`). Its `confidence` is 0.5, so for Findings of equal length the list and regex Detectors win. The model is loaded from `engine/models/` on the first `/detect` call; the Engine never downloads it.
+The GLiNER Detector runs `onnx-community/gliner_multi-v2.1` (fp16 ONNX, through fast_gliner) on chunks of whole sentences, at most 1000 characters each. It keeps an entity only if it scores at least 0.8, contains a capital letter and isn't a pronoun (`Hun`, `henne`). Its `confidence` is 0.5, so for Findings of equal length the list and regex Detectors win. The model is loaded from `engine/models/` on the first `/detect` call. Until it is downloaded the GLiNER Detector finds nothing and the other Detectors still run; detection itself never downloads ([ADR-0004](adr/0004-model-download-on-request.md)).
 
 ## 2. Engine API
 
@@ -63,6 +63,18 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 - `domain` is `"free"`, `"health"`, `"education"`, `"courts"`, `"industrial"` or `"religious"`. It is optional; without it the Engine uses `"free"`. An unknown domain returns `422`.
 - The **Free** Domain finds Base Findings only. Example: `{ "text": "Kari har diabetes, fnr 01019000083" }` gives `person_name` at 0–4 and `fodselsnummer` at 23–34, but no `health`.
 - `words` is an optional list of the user's own words, in the Health keyword syntax (`word`, `word*`, `*word`, phrases), matched in any case. Each match is a Finding with Category `custom`. When the user selects one of their own Domains, the Extension sends `"domain": "free"` and that Domain's words. Example: `{ "text": "Møte på Ullevål", "words": ["ullevål"] }` gives `custom` at 8–15.
+
+### `GET /model`
+
+The GLiNER model on this machine: `200 {"state": "missing", "downloaded_mb": 0, "error": null}`.
+
+- `state` is `missing`, `downloading`, `ready` or `failed`.
+- `downloaded_mb` is how much is on disk so far, while `downloading`. The model is about 600 MB.
+- `error` says why the last download failed, when `state` is `failed`.
+
+### `POST /model/download`
+
+Starts the download in the background, the same files `scripts/fetch_gliner.py` fetches, and answers `202` with the new `GET /model` body. Calling it again while it downloads, or once it is ready, changes nothing. A request with an `Origin` that isn't the Extension's (`chrome-extension://`, `moz-extension://`) gets `403`, so a web page can't start it; a local tool without `Origin`, like curl, can.
 
 ### `POST /rephrase`
 
@@ -135,6 +147,12 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 - Restored values get a dotted underline.
 - Restore keeps working while the answer streams in, word by word.
 - A Placeholder that isn't in the Vault (e.g. an AI-invented `[PERSON_3]`) is left as it is.
+
+### Name model
+
+- While `GET /model` isn't `ready`, the popup shows "Names and places are off" under the site row, with a **Download model** button (`POST /model/download`). While it downloads, a progress bar and `312 of about 600 MB`, refreshed every 2 s. If it fails, the error and **Try again**.
+- Settings has a **Name model** section with its state: Off, Downloading, Downloaded or Failed.
+- The new model is used from the next `/detect`; the Engine doesn't need a restart.
 
 ### Engine down
 
