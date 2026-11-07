@@ -42,12 +42,12 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
 - Hide, Hide all, Ignore, Undo, the Vault
 - Rephrase with Qwen
 - Restore on ChatGPT while the answer streams in
+- GLiNER Detector
+- Restore on Claude
 - the engine-down badge
 - the demo running in Opera
 
 **Could:**
-- GLiNER Detector
-- Restore on Claude
 - `<textarea>` support through an overlay layer
 - a School Domain
 
