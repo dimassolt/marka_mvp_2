@@ -178,12 +178,13 @@ export default defineContentScript({
 
     const openCard = (u: Underline) => {
       clearTimeout(lingerTimer);
-      if (open === u) return;
+      const reopened = open && sameFinding(open, u);
       open = u;
+      if (reopened) return;
       ui.showCard(u);
       browser.runtime
         .sendMessage({ type: 'placeholders', items: [{ value: u.value, prefix: u.prefix }], save: false })
-        .then(([placeholder]: string[]) => placeholder && open === u && ui.stamp(placeholder))
+        .then(([placeholder]: string[]) => placeholder && open && sameFinding(open, u) && ui.stamp(placeholder))
         .catch(() => {});
     };
     const closeCard = () => {
@@ -241,9 +242,15 @@ export default defineContentScript({
     );
 
     // Each frame: keep the Card on its Finding and the Ghost bar on the current field.
+    // A scan makes new Underlines: the open Card follows its Finding's new one, and closes only
+    // when the Finding is gone.
     const place = () => {
-      const all = [...underlined.values()].flat();
-      if (open && !all.includes(open)) closeCard();
+      if (open) {
+        const was = open;
+        const now = underlined.get(was.field)?.find((u) => sameFinding(u, was));
+        if (now) open = now;
+        else closeCard();
+      }
       if (open) ui.placeCard(open.range.getBoundingClientRect());
       const count = current?.isConnected ? (underlined.get(current)?.length ?? 0) : 0;
       ui.placeBar(count, current && count ? current.getBoundingClientRect() : null);
@@ -309,6 +316,11 @@ export default defineContentScript({
 
 function ignoreKey(category: string, value: string) {
   return `${category}\n${value}`;
+}
+
+/** Two Underlines of the same Finding, e.g. from two scans of an unchanged field. */
+function sameFinding(a: Underline, b: Underline) {
+  return a.field === b.field && a.start === b.start && a.end === b.end && a.value === b.value;
 }
 
 /** The Range of [start, end) in the field's joined text. */
