@@ -14,6 +14,7 @@ from ghost_engine.detectors.keywords import KeywordDetector
 from ghost_engine.detectors.religious import religious_detector
 from ghost_engine.findings import Finding, resolve_overlaps
 from ghost_engine.offsets import Utf16Offsets
+from ghost_engine.placeholders import outside_placeholders
 from ghost_engine.ports import Detector
 
 DEFAULT_DOMAIN = "free"
@@ -51,7 +52,8 @@ def detect(text: str, domain: str, words: Sequence[str] = ()) -> list[Finding]:
     words = [w for w in words if w.strip("* ")]
     if words:
         detectors = (*detectors, KeywordDetector(words, category="custom", confidence=0.8))
-    findings = resolve_overlaps(f for d in detectors for f in d.detect(text))
+    found = (f for d in detectors for f in d.detect(text))
+    findings = resolve_overlaps(outside_placeholders(text, found))
     offsets = Utf16Offsets(text)
     return [
         replace(f, start=offsets.convert(f.start), end=offsets.convert(f.end)) for f in findings
