@@ -42,23 +42,36 @@ export interface Finding {
 }
 
 /**
+ * The last answers of POST /detect, by request body (text, Domain and words). Memory only,
+ * never on disk (ADR-0001); lost when the browser puts the worker to sleep.
+ */
+const answers = new Map<string, Finding[]>();
+const REMEMBERED_ANSWERS = 50;
+
+/**
  * Asks the Engine's POST /detect for Findings in the selected Domain.
+ * The same request again gets the remembered answer, without asking the Engine.
  * If the call fails, finds nothing and marks the Engine down (no backup detection, spec §3).
  */
 export async function detect(text: string): Promise<Finding[]> {
   const domain = await selectedDomain.getValue();
   // The Engine knows only the built-in Domains; one of the user's own is Free plus its words.
   const words = (await customDomains.getValue())[domain];
-  const body = words ? { text, domain: 'free', words } : { text, domain };
+  const body = JSON.stringify(words ? { text, domain: 'free', words } : { text, domain });
+  const remembered = answers.get(body);
+  if (remembered) return remembered;
   try {
     const response = await fetch(`${ENGINE_URL}/detect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body,
     });
     if (!response.ok) throw new Error(`status ${response.status}`);
     const { findings } = await response.json();
     await engineRunning.setValue(true);
+    answers.set(body, findings);
+    // A Map keeps insertion order, so its first key is the oldest answer.
+    if (answers.size > REMEMBERED_ANSWERS) answers.delete(answers.keys().next().value!);
     return findings;
   } catch (error) {
     log(`/detect failed: ${error}`);

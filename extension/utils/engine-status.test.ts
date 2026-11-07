@@ -114,6 +114,46 @@ describe('detect', () => {
     expect(await engineRunning.getValue()).toBe(false);
   });
 
+  it('asks the Engine once when the same text is checked again', async () => {
+    const fetch = vi.fn().mockImplementation(async () => Response.json({ findings }));
+    vi.stubGlobal('fetch', fetch);
+
+    await detect('Kari kommer i morgen');
+    expect(await detect('Kari kommer i morgen')).toEqual(findings);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks the Engine again for the same text in another Domain', async () => {
+    const fetch = vi.fn().mockImplementation(async () => Response.json({ findings }));
+    vi.stubGlobal('fetch', fetch);
+
+    await detect('Kari er sykemeldt');
+    await selectedDomain.setValue('health');
+    await detect('Kari er sykemeldt');
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not remember a failed call', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    await detect('Kari ringer');
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => Response.json({ findings })));
+
+    expect(await detect('Kari ringer')).toEqual(findings);
+  });
+
+  it('remembers only the last 50 texts', async () => {
+    const fetch = vi.fn().mockImplementation(async () => Response.json({ findings }));
+    vi.stubGlobal('fetch', fetch);
+
+    for (let i = 0; i < 51; i++) await detect(`melding ${i}`);
+    await detect('melding 50'); // newest: remembered
+    await detect('melding 0'); // oldest: forgotten
+
+    expect(fetch).toHaveBeenCalledTimes(52);
+  });
+
   it('marks the Engine running when the call succeeds', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ findings })));
 

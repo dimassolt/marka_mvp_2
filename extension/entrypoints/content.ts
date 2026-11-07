@@ -2,8 +2,8 @@ import tokens from '@/assets/tokens.css?raw';
 import type { Finding } from '@/utils/engine-status';
 import { colourOf, pointAt, type Colour, type Piece } from '@/utils/underlines';
 
-/** Scan 300 ms after the last keystroke (docs/spec.md §3). */
-const TYPING_PAUSE_MS = 300;
+/** Scan 1 s after the last keystroke (docs/spec.md §3), so typing doesn't send every word. */
+const TYPING_PAUSE_MS = 1000;
 const COLOURS: Colour[] = ['id', 'contact', 'domain'];
 /** Elements that start a new line; the Extension puts a line break before each. */
 const BLOCKS = new Set(['P', 'DIV', 'LI', 'PRE', 'BLOCKQUOTE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
@@ -118,7 +118,7 @@ export default defineContentScript({
 
     document.addEventListener('focusin', (e) => watch(fieldOf(e.target)), true);
     document.addEventListener('input', (e) => watch(fieldOf(e.target)), true);
-    // Scan right after a paste, once the site has inserted it (its change would wait 300 ms).
+    // Scan right after a paste, once the site has inserted it (its change would wait 1 s).
     document.addEventListener(
       'paste',
       (e) => {
