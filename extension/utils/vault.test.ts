@@ -12,4 +12,9 @@ describe('placeholderFor', () => {
     const vault = { '[PERSON_1]': 'Kari', '[PERSON_2]': 'Ola' };
     expect(placeholderFor(vault, 'Kari', 'PERSON')).toBe('[PERSON_1]');
   });
+
+  it('keeps a value its Placeholder when it is found under another prefix', () => {
+    const vault = { '[DATA_1]': 'Ullevål' };
+    expect(placeholderFor(vault, 'Ullevål', 'HEALTH')).toBe('[DATA_1]');
+  });
 });
