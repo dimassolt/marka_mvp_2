@@ -47,3 +47,14 @@ def test_missing_text_returns_422() -> None:
     response = client.post("/detect", json={"domain": "health"})
 
     assert response.status_code == 422
+
+
+def test_detect_without_domain_uses_free() -> None:
+    # docs/spec.md §2: domain is optional and defaults to "free".
+    response = client.post("/detect", json={"text": "Kari har diabetes, fnr 01019000083"})
+
+    assert response.status_code == 200
+    assert [f["category"] for f in response.json()["findings"]] == [
+        "person_name",
+        "fodselsnummer",
+    ]

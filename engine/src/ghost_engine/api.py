@@ -10,7 +10,7 @@ app = FastAPI(title="Ghost Agent Engine")
 
 class DetectRequest(BaseModel):
     text: str
-    domain: str
+    domain: str = service.DEFAULT_DOMAIN
 
 
 class FindingOut(BaseModel):
