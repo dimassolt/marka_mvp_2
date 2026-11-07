@@ -70,3 +70,9 @@ def test_detect_without_domain_uses_free() -> None:
         "person_name",
         "fodselsnummer",
     ]
+
+
+def test_detect_accepts_the_new_domains() -> None:
+    for domain in ("education", "courts", "industrial", "religious"):
+        response = client.post("/detect", json={"text": "tekst", "domain": domain})
+        assert response.status_code == 200, domain

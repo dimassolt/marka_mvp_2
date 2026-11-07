@@ -1,0 +1,78 @@
+# Education Domain keywords, Bokmål and English (docs/spec.md §1, Category `education`).
+# Words that say something about one student: special needs, absence, discipline,
+# grades and exam results. Same syntax as health_keywords.txt.
+#
+# Class-level talk ("snittet i 10A", "matte i dag") is not sensitive, so plain
+# school words like skole, klasse, matte or eksamen are not listed alone.
+
+## Bokmål: special needs and support
+IOP
+individuell opplæringsplan
+opplæringsplan*
+spesialundervisning*
+spesialpedagog*
+PPT
+PP-tjeneste*
+pedagogisk-psykologisk tjeneste
+sakkyndig vurdering*
+enkeltvedtak*
+tilrettelegg*
+tilrettelagt*
+dysleksi*
+dyskalkuli*
+lese- og skrivevansker
+skolevegring*
+
+## Bokmål: absence and discipline
+fravær*
+skulk*
+anmerkning*
+bortvis*
+utvist
+utvisning*
+ordenskarakter*
+atferdskarakter*
+nedsatt karakter i orden
+nedsatt karakter i atferd
+fusk*
+mobb*
+skolemiljøsak*
+aktivitetsplikt*
+
+## Bokmål: grades, exams and records
+standpunkt*
+karakterklage*
+karakterutskrift*
+utsatt eksamen
+kontinuasjonseksamen*
+strøk på eksamen
+elevsamtale*
+utviklingssamtale*
+foreldresamtale*
+elevmappe*
+studentnummer*
+studentnr
+kandidatnummer*
+kandidatnr
+elevnummer*
+elevnr
+
+## English
+special needs
+special education
+IEP
+learning disabilit*
+dyslexi*
+absence*
+truan*
+bullied
+bullying
+expelled
+expulsion
+cheating
+plagiarism case
+exam results
+failed the exam
+grade appeal
+student ID
+student number

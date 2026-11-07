@@ -21,6 +21,10 @@ This table is the contract between Engine and Extension. The Engine returns the 
 | `phone` | Base | `PHONE` | orange | Norwegian 8-digit number with optional `+47`/`0047`, or an international `+` number |
 | `person_name` | Base | `PERSON` | orange | a capitalised word on the SSB first-name list |
 | `health` | Domain (Health) | `HEALTH` | purple | a word or phrase on the Health keyword list (Bokmål and English): diagnoses, medicines, terms like "innlagt" and "sykemeldt" |
+| `education` | Domain (Education) | `EDUCATION` | purple | a word or phrase on the Education keyword list (Bokmål and English): special needs, absence, discipline, grades, terms like "IOP" and "fravær" |
+| `courts` | Domain (Courts) | `COURTS` | purple | a word or phrase on the Courts keyword list (Bokmål and English): closed hearings, draft decisions, sensitive case types, terms like "lukkede dører" and "barnevern" |
+| `industrial` | Domain (Industrial) | `INDUSTRIAL` | purple | a word or phrase on the Industrial keyword list (Bokmål and English): machine makers, machine park, lines, capacity, control systems, terms like "Fanuc" and "produksjonslinje" |
+| `religious` | Domain (Religious) | `RELIGIOUS` | purple | a word or phrase on the Religious keyword list (Bokmål and English): membership, pastoral care, ceremonies, terms like "menighet" and "sjelesorg" |
 
 A Category `id` the Extension doesn't know is drawn purple, and Hide gives it the Placeholder prefix `DATA`.
 
@@ -48,7 +52,7 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 - `start` is inclusive and `end` is exclusive, both counted **in UTF-16 units, the way JavaScript counts**. Example: in `"👋 01019000083"` the fødselsnummer is at 3–14, even though Python sees it at 2–13.
 - Findings are sorted by `start` and never overlap. When two Detectors' Findings overlap, the longer one wins; for equal length, the higher `confidence` wins.
 - Each Detector sets its own `confidence`. It is only used to break overlap ties.
-- `domain` is `"free"` or `"health"` in V1. It is optional; without it the Engine uses `"free"`. An unknown domain returns `422`.
+- `domain` is `"free"`, `"health"`, `"education"`, `"courts"`, `"industrial"` or `"religious"`. It is optional; without it the Engine uses `"free"`. An unknown domain returns `422`.
 - The **Free** Domain finds Base Findings only. Example: `{ "text": "Kari har diabetes, fnr 01019000083" }` gives `person_name` at 0–4 and `fodselsnummer` at 23–34, but no `health`.
 - `words` is an optional list of the user's own words, in the Health keyword syntax (`word`, `word*`, `*word`, phrases), matched in any case. Each match is a Finding with Category `custom`, which the Extension draws as an unknown Category. When the user selects one of their own Domains, the Extension sends `"domain": "free"` and that Domain's words. Example: `{ "text": "Møte på Ullevål", "words": ["ullevål"] }` gives `custom` at 8–15.
 

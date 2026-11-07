@@ -1,6 +1,49 @@
-export const BUILT_IN_DOMAINS = ['free', 'health'] as const;
+export const BUILT_IN_DOMAINS = [
+  'free',
+  'health',
+  'education',
+  'courts',
+  'industrial',
+  'religious',
+] as const;
 
-/** The Domain the Engine should use. `free` and `health` are built in; any other name is one of the user's own Domains. */
+export type BuiltInDomain = (typeof BUILT_IN_DOMAINS)[number];
+
+/** What the popup shows for each built-in Domain. Word counts match the Engine's keyword lists. */
+export const BUILT_IN_DOMAIN_INFO: Record<BuiltInDomain, { label: string; about: string }> = {
+  free: { label: 'Free', about: 'Base checks only: fnr, card, email, phone, names.' },
+  health: {
+    label: 'Health',
+    about:
+      '234 health words in Bokmål and English: diagnoses, medicines, and terms like innlagt and sykemeldt.',
+  },
+  education: {
+    label: 'Education',
+    about:
+      '64 student words in Bokmål and English: special needs, absence, discipline and grades, like IOP and fravær.',
+  },
+  courts: {
+    label: 'Courts',
+    about:
+      '44 court words in Bokmål and English: closed hearings, draft decisions and sensitive case types, like lukkede dører and barnevern.',
+  },
+  industrial: {
+    label: 'Industrial',
+    about:
+      '64 plant words in Bokmål and English: machine makers, machine park, lines and capacity, like Fanuc and produksjonslinje.',
+  },
+  religious: {
+    label: 'Religious',
+    about:
+      '51 parish words in Bokmål and English: membership, pastoral care and ceremonies, like menighet and sjelesorg.',
+  },
+};
+
+export function isBuiltInDomain(domain: string): domain is BuiltInDomain {
+  return (BUILT_IN_DOMAINS as readonly string[]).includes(domain);
+}
+
+/** The Domain the Engine should use. The built-in names go to the Engine as they are; any other name is one of the user's own Domains. */
 export const selectedDomain = storage.defineItem<string>('local:selectedDomain', {
   fallback: 'free',
 });
