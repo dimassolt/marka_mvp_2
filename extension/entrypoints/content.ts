@@ -66,6 +66,14 @@ export default defineContentScript({
       timers.set(field, setTimeout(() => scan(field), delay));
     };
 
+    // An empty field means the message was sent: its values are flagged again (spec §3, Ignore).
+    // Checked on every change, since typing the next message may start before the scan runs.
+    const changed = (field: HTMLElement) => {
+      const text = field instanceof HTMLTextAreaElement ? field.value : (field.textContent ?? '');
+      if (!text.trim()) ignored.delete(field);
+      schedule(field, TYPING_PAUSE_MS);
+    };
+
     // Any change in the field, however the site makes it, schedules a scan.
     const watch = (field: HTMLElement | null) => {
       if (!field || watched.has(field)) return;
@@ -75,7 +83,7 @@ export default defineContentScript({
         overlays.set(field, overlay);
         follow(field, overlay);
       } else {
-        new MutationObserver(() => schedule(field, TYPING_PAUSE_MS)).observe(field, {
+        new MutationObserver(() => changed(field)).observe(field, {
           subtree: true,
           childList: true,
           characterData: true,
@@ -96,7 +104,7 @@ export default defineContentScript({
       placeOverlay(field, overlay);
       if (overlay.text.data !== field.value) {
         overlay.text.data = field.value;
-        schedule(field, TYPING_PAUSE_MS);
+        changed(field);
       }
       requestAnimationFrame(() => follow(field, overlay));
     };
@@ -117,8 +125,6 @@ export default defineContentScript({
         : [];
       // The user typed while the Engine answered: these offsets are stale. Scan again.
       if (joined(piecesOf(field)) !== text) return schedule(field, TYPING_PAUSE_MS);
-      // An empty field means the message was sent: its values are flagged again.
-      if (!text.trim()) ignored.delete(field);
 
       underlined.set(
         field,
