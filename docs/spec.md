@@ -6,27 +6,27 @@ V1 means: the Extension in Opera on chatgpt.com, the Engine on the same Mac, and
 
 ## 1. Categories
 
-This table is the contract between Engine and Extension. The Engine returns the `id`, and the Extension picks the colour and Placeholder prefix from it.
+The Engine owns this table (`CATEGORIES` in `engine/src/ghost_engine/findings.py`). It sends the Placeholder prefix, the name and the group with every Finding, so the Extension knows no Category ids. The Extension only colours the groups: `id` red, `contact` amber, `domain` teal ([design.md](design.md)).
 
-| `id` | Kind | Placeholder | Colour | How it's found |
-|---|---|---|---|---|
-| `fodselsnummer` | Base | `FNR` | red | 11 digits, optionally `6+5` with a space, mod-11 checksum valid, first digit 0–3 |
-| `d_nummer` | Base | `DNR` | red | same as above, first digit 4–7 |
-| `bank_account` | Base | `ACCOUNT` | red | 11 digits, optionally `4.2.5` with dots or spaces, mod-11 checksum valid |
-| `payment_card` | Base | `CARD` | red | 13–19 digits, optionally grouped by spaces or dashes, Luhn checksum valid |
-| `iban` | Base | `IBAN` | red | country code + 2 check digits + account, IBAN mod-97 valid |
-| `secret` | Base | `SECRET` | red | tokens starting `sk-`, `ghp_`, `AKIA`, or a JWT (`eyJ…`.`…`.`…`) |
-| `password` | Base | `PASSWORD` | red | the value after `password:`, `passord:`, `pwd:` or `pw:` (the label itself is not part of the Finding) |
-| `email` | Base | `EMAIL` | orange | an email address |
-| `phone` | Base | `PHONE` | orange | Norwegian 8-digit number with optional `+47`/`0047`, or an international `+` number |
-| `person_name` | Base | `PERSON` | orange | a capitalised word on the SSB first-name list |
-| `health` | Domain (Health) | `HEALTH` | purple | a word or phrase on the Health keyword list (Bokmål and English): diagnoses, medicines, terms like "innlagt" and "sykemeldt" |
-| `education` | Domain (Education) | `EDUCATION` | purple | a word or phrase on the Education keyword list (Bokmål and English): special needs, absence, discipline, grades, terms like "IOP" and "fravær" |
-| `courts` | Domain (Courts) | `COURTS` | purple | a word or phrase on the Courts keyword list (Bokmål and English): closed hearings, draft decisions, sensitive case types, terms like "lukkede dører" and "barnevern" |
-| `industrial` | Domain (Industrial) | `INDUSTRIAL` | purple | a word or phrase on the Industrial keyword list (Bokmål and English): machine makers, machine park, lines, capacity, control systems, terms like "Fanuc" and "produksjonslinje" |
-| `religious` | Domain (Religious) | `RELIGIOUS` | purple | a word or phrase on the Religious keyword list (Bokmål and English): membership, pastoral care, ceremonies, terms like "menighet" and "sjelesorg" |
+| `id` | Kind | Placeholder | Name | Group | How it's found |
+|---|---|---|---|---|---|
+| `fodselsnummer` | Base | `FNR` | Fødselsnummer | `id` | 11 digits, optionally `6+5` with a space, mod-11 checksum valid, first digit 0–3 |
+| `d_nummer` | Base | `DNR` | D-nummer | `id` | same as above, first digit 4–7 |
+| `bank_account` | Base | `ACCOUNT` | Bank account | `id` | 11 digits, optionally `4.2.5` with dots or spaces, mod-11 checksum valid |
+| `payment_card` | Base | `CARD` | Payment card | `id` | 13–19 digits, optionally grouped by spaces or dashes, Luhn checksum valid |
+| `iban` | Base | `IBAN` | IBAN | `id` | country code + 2 check digits + account, IBAN mod-97 valid |
+| `secret` | Base | `SECRET` | Secret | `id` | tokens starting `sk-`, `ghp_`, `AKIA`, or a JWT (`eyJ…`.`…`.`…`) |
+| `password` | Base | `PASSWORD` | Password | `id` | the value after `password:`, `passord:`, `pwd:` or `pw:` (the label itself is not part of the Finding) |
+| `email` | Base | `EMAIL` | Email | `contact` | an email address |
+| `phone` | Base | `PHONE` | Phone | `contact` | Norwegian 8-digit number with optional `+47`/`0047`, or an international `+` number |
+| `person_name` | Base | `PERSON` | Name | `contact` | a capitalised word on the SSB first-name list |
+| `health` | Domain (Health) | `HEALTH` | Health | `domain` | a word or phrase on the Health keyword list (Bokmål and English): diagnoses, medicines, terms like "innlagt" and "sykemeldt" |
+| `education` | Domain (Education) | `EDUCATION` | Education | `domain` | a word or phrase on the Education keyword list (Bokmål and English): special needs, absence, discipline, grades, terms like "IOP" and "fravær" |
+| `courts` | Domain (Courts) | `COURTS` | Courts | `domain` | a word or phrase on the Courts keyword list (Bokmål and English): closed hearings, draft decisions, sensitive case types, terms like "lukkede dører" and "barnevern" |
+| `industrial` | Domain (Industrial) | `INDUSTRIAL` | Industrial | `domain` | a word or phrase on the Industrial keyword list (Bokmål and English): machine makers, machine park, lines, capacity, control systems, terms like "Fanuc" and "produksjonslinje" |
+| `religious` | Domain (Religious) | `RELIGIOUS` | Religious | `domain` | a word or phrase on the Religious keyword list (Bokmål and English): membership, pastoral care, ceremonies, terms like "menighet" and "sjelesorg" |
 
-A Category `id` the Extension doesn't know is drawn purple, and Hide gives it the Placeholder prefix `DATA`.
+A Category missing from the table, and the user's own words (`custom`), get the prefix `DATA` and group `domain`; their names are "Sensitive data" and "Your word". A group the Extension doesn't know is drawn teal.
 
 ## 2. Engine API
 
@@ -43,18 +43,22 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 ```
 ```json
 { "findings": [
-  { "start": 0,  "end": 4,  "category": "person_name",   "confidence": 0.6 },
-  { "start": 9,  "end": 17, "category": "health",        "confidence": 0.8 },
-  { "start": 23, "end": 34, "category": "fodselsnummer", "confidence": 0.99 }
+  { "start": 0,  "end": 4,  "category": "person_name",   "confidence": 0.6,
+    "prefix": "PERSON", "name": "Name", "group": "contact" },
+  { "start": 9,  "end": 17, "category": "health",        "confidence": 0.8,
+    "prefix": "HEALTH", "name": "Health", "group": "domain" },
+  { "start": 23, "end": 34, "category": "fodselsnummer", "confidence": 0.99,
+    "prefix": "FNR", "name": "Fødselsnummer", "group": "id" }
 ] }
 ```
 
 - `start` is inclusive and `end` is exclusive, both counted **in UTF-16 units, the way JavaScript counts**. Example: in `"👋 01019000083"` the fødselsnummer is at 3–14, even though Python sees it at 2–13.
 - Findings are sorted by `start` and never overlap. When two Detectors' Findings overlap, the longer one wins; for equal length, the higher `confidence` wins.
 - Each Detector sets its own `confidence`. It is only used to break overlap ties.
+- `prefix`, `name` and `group` come from the table in §1.
 - `domain` is `"free"`, `"health"`, `"education"`, `"courts"`, `"industrial"` or `"religious"`. It is optional; without it the Engine uses `"free"`. An unknown domain returns `422`.
 - The **Free** Domain finds Base Findings only. Example: `{ "text": "Kari har diabetes, fnr 01019000083" }` gives `person_name` at 0–4 and `fodselsnummer` at 23–34, but no `health`.
-- `words` is an optional list of the user's own words, in the Health keyword syntax (`word`, `word*`, `*word`, phrases), matched in any case. Each match is a Finding with Category `custom`, which the Extension draws as an unknown Category. When the user selects one of their own Domains, the Extension sends `"domain": "free"` and that Domain's words. Example: `{ "text": "Møte på Ullevål", "words": ["ullevål"] }` gives `custom` at 8–15.
+- `words` is an optional list of the user's own words, in the Health keyword syntax (`word`, `word*`, `*word`, phrases), matched in any case. Each match is a Finding with Category `custom`. When the user selects one of their own Domains, the Extension sends `"domain": "free"` and that Domain's words. Example: `{ "text": "Møte på Ullevål", "words": ["ullevål"] }` gives `custom` at 8–15.
 
 ### `POST /rephrase`
 
@@ -100,9 +104,10 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 
 ### Ghost bar
 
-- The Ghost bar is a round badge in the bottom-right corner of a field that has at least one Finding. It shows the Finding count.
-- Clicking it shows **Hide all** and **Undo**.
-- **Hide all** hides every underlined Finding in the field. It is one step for Undo.
+- The Ghost bar is a label tab on the bottom edge of the field the user last focused, while it has at least one Finding. It shows the Finding count.
+- Clicking it shows **Hide all** and **Ignore all**.
+- **Hide all** hides every underlined Finding in the field.
+- **Ignore all** ignores every underlined Finding in the field.
 
 ### Ignore
 
@@ -111,9 +116,7 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 
 ### Undo
 
-- Each field keeps a list of steps: Hide, Hide all, an accepted Rephrase.
-- Undo reverts the newest step and puts the original text back. Vault entries stay, since Restore may still need them.
-- The list is cleared when the message is sent.
+- The Extension has no Undo of its own. Hide types through the editor's insert command, so the editor's own Ctrl+Z puts the original text back. Vault entries stay, since Restore may still need them.
 
 ### Rephrase
 
@@ -144,7 +147,7 @@ Every check below uses the demo note in section 5, typed or pasted into ChatGPT'
 | 1 | an empty ChatGPT input | the demo note is pasted | within 1 s, `01019000083` is red; `Kari`, the phone and the email are orange; `diabetes`, `sykemeldt` and `insulin` are purple; the Ghost bar shows 8 |
 | 2 | the note is underlined | the user hovers `01019000083` | its Card opens above it with Fødselsnummer, Hide, Rephrase, Ignore |
 | 3 | the Card is open on `01019000083` | the user clicks Hide | the field reads `fnr [FNR_1]`, the Vault holds `[FNR_1] → 01019000083`, the Ghost bar shows 7 |
-| 4 | after check 3 | the user clicks Undo | the field reads `fnr 01019000083` again, red, and the Ghost bar shows 8 |
+| 4 | after check 3 | the user presses Ctrl+Z | the field reads `fnr 01019000083` again, red, and the Ghost bar shows 8 |
 | 5 | the note is underlined | the user clicks Ignore on the first `Kari` | both `Kari` are no longer underlined, and the Ghost bar shows 6 |
 | 6 | the note is underlined | the user clicks Rephrase on `diabetes` | within 15 s the Card shows a Norwegian sentence without the name, age or diagnosis; Accept replaces the sentence |
 | 7 | the note is underlined | the user clicks Hide all | every underlined value is replaced, the same value with the same Placeholder (both `Kari` → `[PERSON_1]`), and the Ghost bar disappears |

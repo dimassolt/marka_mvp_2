@@ -43,6 +43,9 @@ _Avoid_: mask, redact, anonymize
 **Hide all**:
 Replaces every Finding in the field with its Placeholder.
 
+**Ignore all**:
+Ignores every Finding in the field.
+
 **Placeholder**:
 A typed, numbered token that stands in for a hidden value, such as `[PERSON_1]` or `[FNR_1]`. Within one text, the same value always gets the same Placeholder.
 _Avoid_: `[HIDE]`, mask, token
@@ -59,10 +62,6 @@ _Avoid_: dismiss, allow, whitelist
 Shows the original values in place of Placeholders in the AI's response, on the user's screen only.
 _Avoid_: unmask, de-anonymize, reveal
 
-**Undo**:
-Reverts the most recent Hide, Hide all or Rephrase in the input field, putting the original text back.
-_Avoid_: revert, rollback
-
 ### On screen
 
 **Card**:
@@ -70,7 +69,7 @@ The small box that opens above a Finding, offering Hide, Rephrase and Ignore.
 _Avoid_: popover, tooltip, popup
 
 **Ghost bar**:
-The round badge in the corner of an input field. It shows how many Findings the field has and offers Hide all and Undo.
+The label tab on the bottom edge of an input field. It shows how many Findings the field has and offers Hide all and Ignore all.
 _Avoid_: toolbar, badge, widget
 
 ### Memory
