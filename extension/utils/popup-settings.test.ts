@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import courts from '../../engine/src/ghost_engine/data/courts_keywords.txt?raw';
+import education from '../../engine/src/ghost_engine/data/education_keywords.txt?raw';
+import health from '../../engine/src/ghost_engine/data/health_keywords.txt?raw';
+import industrial from '../../engine/src/ghost_engine/data/industrial_keywords.txt?raw';
+import religious from '../../engine/src/ghost_engine/data/religious_keywords.txt?raw';
 import {
   addSite,
   addWord,
+  BUILT_IN_DOMAIN_INFO,
   createDomain,
   customDomains,
   isSiteOn,
@@ -16,6 +22,20 @@ import {
 } from './popup-settings';
 
 beforeEach(() => fakeBrowser.reset());
+
+/** Entries in an Engine keyword list, counted like its load_list: no comments, no blank lines. */
+function entries(list: string): number {
+  return list.split('\n').filter((line) => line.trim() && !line.trim().startsWith('#')).length;
+}
+
+describe('built-in Domain info', () => {
+  const lists = { health, education, courts, industrial, religious };
+
+  it.each(Object.entries(lists))('gives the word count of the Engine list for %s', (domain, list) => {
+    const about = BUILT_IN_DOMAIN_INFO[domain as keyof typeof lists].about;
+    expect(about).toMatch(new RegExp(`^${entries(list)} \\S+ words in Bokmål and English`));
+  });
+});
 
 describe('selected Domain', () => {
   it('is the Free Domain until the user picks another', async () => {

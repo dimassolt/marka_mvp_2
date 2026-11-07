@@ -15,27 +15,27 @@ export const BUILT_IN_DOMAIN_INFO: Record<BuiltInDomain, { label: string; about:
   health: {
     label: 'Health',
     about:
-      '234 health words in Bokmål and English: diagnoses, medicines, and terms like innlagt and sykemeldt.',
+      '419 health words in Bokmål and English: diagnoses, medicines, and terms like innlagt and sykemeldt.',
   },
   education: {
     label: 'Education',
     about:
-      '64 student words in Bokmål and English: special needs, absence, discipline and grades, like IOP and fravær.',
+      '322 student words in Bokmål and English: special needs, absence, discipline and grades, like IOP and fravær.',
   },
   courts: {
     label: 'Courts',
     about:
-      '44 court words in Bokmål and English: closed hearings, draft decisions and sensitive case types, like lukkede dører and barnevern.',
+      '324 court words in Bokmål and English: closed hearings, draft decisions and sensitive case types, like lukkede dører and barnevern.',
   },
   industrial: {
     label: 'Industrial',
     about:
-      '64 plant words in Bokmål and English: machine makers, machine park, lines and capacity, like Fanuc and produksjonslinje.',
+      '383 plant words in Bokmål and English: machine makers, machine park, lines and capacity, like Fanuc and produksjonslinje.',
   },
   religious: {
     label: 'Religious',
     about:
-      '51 parish words in Bokmål and English: membership, pastoral care and ceremonies, like menighet and sjelesorg.',
+      '343 parish words in Bokmål and English: membership, pastoral care and ceremonies, like menighet and sjelesorg.',
   },
 };
 
