@@ -15,8 +15,11 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@preact/preset-vite": "^2.10.6",
+    "eslint": "^10.14.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.1",
     "vite": "^8.1.5",
     "vitest": "^5.0.5",
     "web-ext": "^10.5.0",
