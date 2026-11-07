@@ -93,7 +93,8 @@ export default defineContentScript({
     };
 
     // Each frame: keep the overlay on the textarea, and notice new text. A site can change
-    // a textarea's value without any event (e.g. emptying it after Send).
+    // a textarea's value without any event (e.g. emptying it after Send), so this always runs;
+    // only placing the overlay waits until the field has Findings to underline.
     const follow = (field: HTMLTextAreaElement, overlay: Overlay) => {
       if (!field.isConnected) {
         overlay.box.remove();
@@ -101,7 +102,7 @@ export default defineContentScript({
         draw();
         return;
       }
-      placeOverlay(field, overlay);
+      if (underlined.get(field)?.length) placeOverlay(field, overlay);
       if (overlay.text.data !== field.value) {
         overlay.text.data = field.value;
         changed(field);
@@ -196,6 +197,7 @@ export default defineContentScript({
       const reopened = open && sameFinding(open, u);
       open = u;
       if (reopened) return;
+      wake();
       ui.showCard(u);
       browser.runtime
         .sendMessage({ type: 'placeholders', items: [{ value: u.value, prefix: u.prefix }], save: false })
@@ -229,6 +231,8 @@ export default defineContentScript({
       'mousemove',
       (e) => {
         if (pinned) return;
+        // No Findings on the page (or the site is off): nothing to hover.
+        if (!open && !hasFindings()) return;
         if (e.composedPath().includes(ui.host)) return clearTimeout(lingerTimer);
         const u = underlineAt(e.clientX, e.clientY);
         if (u) openCard(u);
@@ -264,6 +268,8 @@ export default defineContentScript({
     // Each frame: keep the Card on its Finding and the Ghost bar on the current field.
     // A scan makes new Underlines: the open Card follows its Finding's new one, and closes only
     // when the Finding is gone.
+    // The loop runs only while a Card or the Ghost bar is on screen; a scan or a Card wakes it.
+    let placing = false;
     const place = () => {
       if (open) {
         const was = open;
@@ -274,11 +280,26 @@ export default defineContentScript({
       if (open) ui.placeCard(open.range.getBoundingClientRect());
       const count = current?.isConnected ? (underlined.get(current)?.length ?? 0) : 0;
       ui.placeBar(count, current && count ? current.getBoundingClientRect() : null);
+      // Nothing left on screen to keep in place: stop until something wakes the loop again.
+      if (!open && !count) {
+        placing = false;
+        return;
+      }
       requestAnimationFrame(place);
     };
-    requestAnimationFrame(place);
+    const wake = () => {
+      if (placing) return;
+      placing = true;
+      requestAnimationFrame(place);
+    };
+
+    function hasFindings() {
+      for (const list of underlined.values()) if (list.length) return true;
+      return false;
+    }
 
     function draw() {
+      wake();
       for (const field of underlined.keys()) if (!field.isConnected) underlined.delete(field);
       const all = [...underlined.values()].flat();
       for (const colour of COLOURS) {
@@ -292,6 +313,8 @@ export default defineContentScript({
       (e) => {
         const field = fieldOf(e.target);
         if (field) current = field;
+        // The Ghost bar moves to this field, if it already has Findings.
+        if (field) wake();
         watch(field);
       },
       true,
