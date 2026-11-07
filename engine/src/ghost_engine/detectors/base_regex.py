@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from ghost_engine.detectors import checksums
-from ghost_engine.findings import Finding
+from ghost_engine.findings import Finding, resolve_overlaps
 
 Classifier = Callable[[str], str | None]
 """Takes the matched text, returns the Category id or None to reject it."""
@@ -34,11 +34,21 @@ def _national_id(match: str) -> str | None:
     return None
 
 
+def _bank_account(match: str) -> str | None:
+    return "bank_account" if checksums.bank_account_valid(_digits(match)) else None
+
+
 _RULES: tuple[_Rule, ...] = (
     _Rule(
         pattern=re.compile(r"(?<!\w)\d{6} ?\d{5}(?!\w)"),
         classify=_national_id,
         confidence=0.99,
+    ),
+    _Rule(
+        # 4.2.5 digits; the separator, if any, must be the same both times.
+        pattern=re.compile(r"(?<!\w)\d{4}([. ]?)\d{2}\1\d{5}(?!\w)"),
+        classify=_bank_account,
+        confidence=0.9,
     ),
 )
 
@@ -55,4 +65,6 @@ class BaseRegexDetector:
                     continue
                 start, end = match.span(rule.group)
                 findings.append(Finding(start, end, category, rule.confidence))
-        return sorted(findings, key=lambda f: f.start)
+        # A valid fødselsnummer is also a valid account number; the overlap rule
+        # keeps the higher-confidence one.
+        return resolve_overlaps(findings)

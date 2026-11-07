@@ -21,3 +21,10 @@ def fodselsnummer_valid(digits: str) -> bool:
     k1 = _mod11_check_digit(digits[:9], _FNR_K1_WEIGHTS)
     k2 = _mod11_check_digit(digits[:10], _MOD11_WEIGHTS)
     return k1 == int(digits[9]) and k2 == int(digits[10])
+
+
+def bank_account_valid(digits: str) -> bool:
+    """Mod-11 control digit of an 11-digit Norwegian account number."""
+    if len(digits) != 11 or not digits.isdigit():
+        return False
+    return _mod11_check_digit(digits[:10], _MOD11_WEIGHTS) == int(digits[10])

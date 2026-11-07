@@ -35,3 +35,19 @@ def test_d_nummer_starts_with_4_to_7() -> None:
 @pytest.mark.parametrize("text", ["101019000083", "x01019000083", "0101900008"])
 def test_fodselsnummer_must_stand_alone(text: str) -> None:
     assert ("fodselsnummer", "01019000083") not in found(text)
+
+
+# bank_account ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("account", ["86011117947", "8601.11.17947", "8601 11 17947"])
+def test_bank_account_with_valid_checksum_is_found(account: str) -> None:
+    assert found(f"konto {account}") == [("bank_account", account)]
+
+
+def test_bank_account_with_failed_checksum_is_not_found() -> None:
+    assert found("konto 8601.11.17948") == []
+
+
+def test_bank_account_with_mixed_separators_is_not_found() -> None:
+    assert found("konto 8601.11 17947") == []
