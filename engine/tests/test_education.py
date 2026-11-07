@@ -67,6 +67,9 @@ def test_english_education_terms_are_found(term: str) -> None:
         "Fusion er et fint ord.",
         "the important meeting",
         "Ta med deg tilbehør.",
+        "Jeg var litt sen i dag.",
+        "Send meg filen i kveld.",
+        "Vi skal resitere et dikt.",
     ],
 )
 def test_everyday_words_are_not_education_findings(text: str) -> None:

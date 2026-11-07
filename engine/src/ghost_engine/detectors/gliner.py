@@ -62,7 +62,12 @@ class GlinerDetector:
         return self._model
 
     def detect(self, text: str) -> list[Finding]:
-        model = self._get_model()
+        try:
+            model = self._get_model()
+        except ModelMissingError:
+            # Not downloaded yet: the other Detectors still run, and the popup offers the
+            # download (GET /model). The next call tries again, so a new download is picked up.
+            return []
         findings: list[Finding] = []
         for chunk_start, chunk_end in chunk_spans(text, self._max_chars):
             chunk = text[chunk_start:chunk_end]
@@ -90,13 +95,24 @@ def model_dir(models_dir: Path = MODELS_DIR) -> Path:
     return models_dir / MODEL_ID.split("/")[1]
 
 
+def download_model(target: Path) -> None:
+    """Fetch the pinned model files into target. Used by scripts/fetch_gliner.py and by
+    POST /model/download when the user clicks Download in the popup (ADR-0004)."""
+    from huggingface_hub import snapshot_download  # only needed for the download
+
+    snapshot_download(
+        MODEL_ID, revision=MODEL_REVISION, allow_patterns=MODEL_FILES, local_dir=target
+    )
+
+
 def load_model(models_dir: Path = MODELS_DIR) -> EntityModel:
-    """Load the model from disk only. The Engine never downloads at runtime (ADR-0001)."""
+    """Load the model from disk only. Detection never downloads (ADR-0001, ADR-0004)."""
     path = model_dir(models_dir)
     if not (path / MODEL_FILE).is_file():
         raise ModelMissingError(
             f"GLiNER model not found in {path}. "
-            "Run from engine/: uv run python scripts/fetch_gliner.py"
+            "Click Download model in the popup, or run from engine/: "
+            "uv run python scripts/fetch_gliner.py"
         )
     from fast_gliner import FastGLiNER  # heavy import, only when the model is needed
 

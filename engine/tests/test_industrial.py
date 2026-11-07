@@ -71,6 +71,7 @@ def test_english_industrial_terms_are_found(term: str) -> None:
         "Han har en abbor i fryseren.",
         "Linjen var lang i butikken.",
         "Det er en presserende sak.",
+        "The server uptime was great this month.",
     ],
 )
 def test_everyday_words_are_not_industrial_findings(text: str) -> None:

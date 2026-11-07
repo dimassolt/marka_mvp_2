@@ -1,7 +1,11 @@
+from collections.abc import Iterator
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
-from ghost_engine.api import app
+from ghost_engine.api import app, model_download
+from ghost_engine.model_download import ModelDownload
 
 client = TestClient(app)
 
@@ -96,3 +100,50 @@ def test_detect_accepts_the_new_domains() -> None:
     for domain in ("education", "courts", "industrial", "religious"):
         response = client.post("/detect", json={"text": "tekst", "domain": domain})
         assert response.status_code == 200, domain
+
+
+# GLiNER model download (docs/spec.md §2, ADR-0004) -----------------------------------
+
+
+@pytest.fixture
+def model(tmp_path: Path) -> Iterator[ModelDownload]:
+    """A model download that writes a fake model at once, in place of the real one."""
+
+    def download(target: Path) -> None:
+        (target / "onnx").mkdir(parents=True)
+        (target / "onnx" / "model.onnx").write_bytes(b"x")
+
+    fake = ModelDownload(download, tmp_path, "onnx/model.onnx", run=lambda job: job())
+    app.dependency_overrides[model_download] = lambda: fake
+    yield fake
+    app.dependency_overrides.clear()
+
+
+def test_model_endpoint_reports_a_missing_model(model: ModelDownload) -> None:
+    response = client.get("/model")
+
+    assert (response.status_code, response.json()) == (
+        200,
+        {"state": "missing", "downloaded_mb": 0, "error": None},
+    )
+
+
+def test_download_endpoint_starts_the_download(model: ModelDownload) -> None:
+    response = client.post("/model/download")
+
+    assert response.status_code == 202
+    assert response.json()["state"] == "ready"
+    assert model.status().state == "ready"
+
+
+def test_the_extension_may_start_the_download(model: ModelDownload) -> None:
+    response = client.post("/model/download", headers={"Origin": "chrome-extension://abcdef"})
+
+    assert response.status_code == 202
+
+
+def test_a_web_page_may_not_start_the_download(model: ModelDownload) -> None:
+    response = client.post("/model/download", headers={"Origin": "https://example.com"})
+
+    assert response.status_code == 403
+    assert model.status().state == "missing"

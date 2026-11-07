@@ -52,7 +52,7 @@ synagoge*
 gurdwara*
 kirkeasyl*
 
-## English
+## English: membership, pastoral care and ceremonies
 parishioner*
 congregation*
 pastoral care
@@ -66,3 +66,317 @@ church member*
 prayer request*
 mosque*
 synagogue*
+
+## Shared: names the same in both languages
+hindu*
+buddhist*
+sikh*
+baptist*
+adventist*
+protestant*
+ahmadi*
+zakat
+sadaqa*
+nikah
+bar mitzva*
+bat mitzva*
+brit mila*
+muslim
+
+## Bokmål: more membership and belief
+kirkemedlem*
+medlemskap i Den norske kirke
+religiøs tilhørighet
+trostilhørighet*
+troende
+konvertitt*
+frafalne
+utmeldt*
+innmeldt*
+kirkebok*
+kirkebøker*
+ministerialbok*
+medlemsliste*
+medlemsnummer*
+givernummer*
+giverliste*
+fast giver
+faste givere
+tiendegave*
+tiendebetaling*
+kollekt
+kollekten
+muslimer
+muslimsk*
+sunnimuslim*
+sjiamuslim*
+kristne
+katolikk*
+pinsevenn*
+metodist*
+lutheraner*
+Jehovas vitne*
+jøde
+jøder
+jødisk*
+ateist*
+humanetiker*
+Human-Etisk Forbund
+religiøs forfølgelse
+
+## Bokmål: more pastoral care and spiritual guidance
+sjelesørger*
+samtale med presten
+samtale med imamen
+samtale med rabbineren
+prestesamtale*
+prestebesøk*
+skriftestol*
+bikt*
+absolusjon*
+åndelig veiledning
+åndelig omsorg
+Kirkens SOS
+diakonal*
+diakonibesøk*
+sykesalving*
+nattverd*
+
+## Bokmål: more ceremonies and groups
+barnedåp*
+voksendåp*
+gudfar
+gudmor
+gudforeldre
+omskjæring*
+kirkebryllup*
+kirkelig bryllup
+minnestund*
+minnesamvær*
+urnenedsettelse*
+askespredning*
+gravlegging*
+gravlagt*
+begravd*
+sørgegudstjeneste*
+bønnemøte*
+bønnegruppe*
+bibelgruppe*
+bibelstudie*
+husfellesskap*
+fredagsbønn*
+koranskole*
+koranundervisning*
+søndagsskole*
+bedehus*
+misjonshus*
+
+## English: more membership and belief
+church membership
+parish register*
+parish record*
+member of the parish
+parish member*
+temple member*
+faith community
+faith communities
+religious community
+religious communities
+religious affiliation
+religious belief*
+religious conversion
+converted to Islam
+converted to Christianity
+converted to Judaism
+converted to Catholicism
+apostate*
+apostasy
+left the church
+leaving the church
+left the congregation
+joined the church
+joined the congregation
+church tax
+tithe*
+tithing
+donor list*
+giving record*
+offering envelope*
+pledge card*
+gift aid declaration*
+donor number*
+giver number*
+Muslims
+Catholic*
+Pentecostal*
+Methodist*
+Lutheran*
+Jehovah's Witness*
+Jewish
+Jews
+atheist*
+Sunni
+Shia
+Shiite*
+excommunicat*
+disfellowship*
+church asylum
+religious persecution
+attends church
+church attendance
+goes to church
+attends mass
+
+## English: more pastoral care and spiritual guidance
+prayer list*
+prayer chain*
+prayer group*
+prayer meeting*
+intercession*
+spiritual counsel*
+spiritual guidance
+spiritual care
+chaplain visit*
+pastoral visit*
+pastoral conversation*
+pastoral counsel*
+confessional
+sacrament of reconciliation
+last rites
+anointing of the sick
+holy communion
+first communion
+
+## English: more ceremonies and groups
+christening*
+infant baptism
+adult baptism
+godparent*
+godfather
+godmother
+confirmand*
+confirmation ceremony
+church wedding*
+religious wedding*
+memorial service*
+burial*
+buried at
+interment
+cremation*
+scattering of ashes
+bible study
+bible group*
+Sunday school
+Quran school*
+Koran school*
+Quran class*
+Friday prayer*
+circumcision
+
+## Bokmål: more belief, conversion and giving
+religiøs overbevisning
+trosretning*
+frikirkemedlem*
+kristen tro
+syvendedagsadventist*
+omvendelse*
+frelst*
+gjenfødt kristen
+frafall fra troen
+bryte med troen
+brøt med troen
+ekskommunis*
+utstøtelse*
+gavebrev*
+testamentarisk gave*
+misjonsgave*
+offergave*
+
+## Bokmål: more pastoral care, ceremonies and groups
+bønneønske*
+bønneemne*
+kirkelig rådgivning
+samtale med diakonen
+samtale med pastoren
+pastorsamtale*
+sykehusprest*
+fengselsprest*
+studentprest*
+sykehusimam*
+konfirmert*
+ferming*
+fermet
+religiøs vielse
+kremasjon*
+kremert*
+jordpåkastelse*
+kistelegging*
+sjeleringing*
+KFUK-KFUM
+alphakurs*
+alpha-kurs*
+trosopplæring*
+pilegrimsreise*
+
+## English: more belief, conversion and giving
+congregant*
+churchgoer*
+worshipper*
+worshiper*
+devout
+observant Jew*
+church record*
+baptismal record*
+membership roll*
+church roll*
+deregistered from the church
+resigned from the church
+left the faith
+born-again Christian*
+evangelical*
+Orthodox Christian*
+Orthodox Jew*
+Coptic*
+Mormon*
+Latter-day Saint*
+Quaker*
+Rastafarian*
+Wiccan*
+Scientolog*
+church donation*
+religious donation*
+missionary gift*
+almsgiving
+alms
+
+## English: more pastoral care, ceremonies and groups
+spiritual director*
+spiritual direction
+pastoral support
+hospital chaplain*
+prison chaplain*
+student chaplain*
+chaplaincy visit*
+visit from the priest
+visit from the imam
+visit from the rabbi
+talk with the priest
+talk with the imam
+talk with the rabbi
+graveside service*
+committal service*
+funeral mass
+requiem mass*
+memorial mass*
+child dedication*
+religious marriage*
+pilgrimage*
+Alpha course*
+Bible camp*
+church camp*
+confirmation camp*
+Hebrew school*
+catechism class*
+catechesis
+Ramadan fast*
+fasting for Ramadan

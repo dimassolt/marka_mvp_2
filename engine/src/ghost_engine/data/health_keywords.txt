@@ -6,6 +6,10 @@
 #   *word       any compound ending in it (brystkreft)
 #   two words   a phrase, any whitespace between
 #
+# Group entries under "## Bokmål: topic", "## English: topic" or, for names and
+# codes spelled the same in both, "## Shared: topic". Every Domain list keeps at
+# least 150 Bokmål and 150 English entries (tests/test_keyword_lists.py).
+#
 # Keep entries specific. A stem that is too short catches everyday words:
 # "kreft*" would match "krefter", so kreft is listed by form instead.
 
@@ -202,7 +206,7 @@ anxiety
 panic attack*
 eating disorder*
 anorexi*
-bulimi*
+bulimia nervosa
 schizophren*
 psychosis
 psychotic
@@ -258,3 +262,204 @@ levothyroxine
 prednisone
 antipsychotic*
 sleeping pill*
+
+## Bokmål: more conditions and injuries
+leukemi*
+lymfom*
+melanom*
+metastase*
+atrieflimmer*
+hjerterytmeforstyrr*
+angina
+anemi*
+hypotyreose
+hypertyreose
+lavt stoffskifte
+høyt stoffskifte
+nyrestein*
+gallestein*
+isjias
+fibromyalgi*
+utbrenthet
+kronisk utmattelse*
+hørselstap*
+grønn stær
+grå stær
+hjernerystelse*
+hjerneskade*
+ryggmargsskade*
+lammelse*
+amputert*
+amputasjon*
+OCD
+tourette*
+cerebral parese
+downs syndrom
+utviklingshemm*
+funksjonsnedsett*
+hørselshemm*
+synshemm*
+psykisk syk*
+psykiske plager
+tvangstanker
+panikkanfall*
+abstinens*
+overdose*
+
+## Bokmål: more pregnancy and fertility
+provosert abort
+selvbestemt abort
+keisersnitt*
+svangerskapsforgiftning*
+prøverør*
+fertilitetsbehandling*
+infertil*
+
+## Bokmål: more care, tests and benefits
+narkose*
+sykehusinnleggelse*
+intensivavdeling*
+palliativ*
+terminalt syk
+arbeidsavklaringspenger
+sykepenger*
+pleiepenger*
+hjemmesykepleie*
+sykehjemsplass*
+psykiatri*
+distriktspsykiatrisk*
+rusbehandling*
+avrusning*
+biopsi*
+koloskopi*
+gastroskopi*
+mammografi*
+blodprøvesvar*
+MR-undersøkelse*
+CT-undersøkelse*
+
+## Bokmål: more medicines (Norwegian spelling)
+diklofenak*
+venlafaksin*
+mirtazapin*
+kvetiapin*
+olanzapin*
+aripiprazol*
+lamotrigin*
+atomoksetin*
+kodein*
+amlodipin*
+
+## English: more conditions and injuries
+leukaemia
+leukemia
+lymphoma*
+melanoma*
+metastas*
+atrial fibrillation
+arrhythmia*
+anaemia
+anemia
+hypothyroidism
+hyperthyroidism
+kidney stone*
+gallstone*
+sciatica
+fibromyalgia
+burnout
+chronic fatigue
+hearing loss
+glaucoma
+cataract*
+concussion*
+brain injury
+spinal cord injury
+paralysed
+paralyzed
+paralysis
+amputation*
+amputee*
+heart disease
+kidney failure
+liver failure
+cirrhosis
+had a stroke
+stroke patient*
+HIV-positive
+sexually transmitted
+chlamydia
+gonorrh*
+syphilis
+herpes
+mental illness
+mentally ill
+mental health condition*
+panic disorder*
+obsessive-compulsive
+Tourette's
+cerebral palsy
+Down syndrome
+intellectual disabilit*
+hearing impair*
+visually impaired
+wheelchair user*
+withdrawal symptom*
+overdosed
+
+## English: more pregnancy and fertility
+C-section*
+caesarean*
+cesarean*
+pre-eclampsia
+preeclampsia
+IVF
+fertility treatment*
+infertility
+
+## English: more care, tests and benefits
+anaesthesia
+anesthesia
+intensive care
+ICU
+palliative
+terminally ill
+hospice
+disability benefit*
+sickness benefit*
+nursing home
+home nursing
+called in sick
+medical leave
+long-term sick*
+drug rehab
+rehab clinic*
+oncolog*
+cardiologist*
+neurologist*
+physiotherap*
+therapy session*
+had surgery
+underwent surgery
+chemo
+inhaler*
+EpiPen*
+biopsy
+biopsies
+colonoscopy
+gastroscopy
+mammogram*
+blood test result*
+MRI scan*
+CT scan*
+
+## English: more medicines (English spelling)
+diclofenac
+venlafaxine
+mirtazapine
+quetiapine
+olanzapine
+aripiprazole
+lamotrigine
+atomoxetine
+codeine
+amlodipine

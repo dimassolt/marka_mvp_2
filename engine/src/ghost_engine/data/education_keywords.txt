@@ -57,7 +57,7 @@ kandidatnr
 elevnummer*
 elevnr
 
-## English
+## English: special needs, absence, discipline and records
 special needs
 special education
 IEP
@@ -76,3 +76,275 @@ failed the exam
 grade appeal
 student ID
 student number
+
+## Bokmål: more special needs and support
+spesialpedagogisk hjelp
+spesialpedagogisk tiltak
+lærevanske*
+matematikkvansker
+språkvansker
+språkforstyrr*
+konsentrasjonsvansker
+atferdsvansker
+atferdsproblem*
+sosiale vansker
+emosjonelle vansker
+logoped*
+skolepsykolog*
+elevassistent*
+ansvarsgruppe*
+individuell plan
+overgangssamtale*
+spesialgruppe*
+spesialklasse*
+forsterket avdeling
+alternativ opplæring
+alternativ opplæringsarena
+sykeundervisning*
+hjemmeundervisning*
+særskilt språkopplæring
+innføringsklasse*
+minoritetsspråklig*
+morsmålsopplæring*
+tospråklig fagopplæring
+fritak fra vurdering
+fritatt fra vurdering
+
+## Bokmål: more absence, wellbeing and discipline
+skolefravær*
+ufrivillig skolefravær
+bekymringsfullt fravær
+bekymringsmelding*
+melding til barnevernet
+skolehelsetjeneste*
+helsesykepleier*
+helsesøster*
+oppfølgingstjeneste*
+krenkende atferd
+krenkelse*
+utestengning*
+nettmobb*
+trakassering*
+skriftlig advarsel
+varsel om nedsatt karakter
+nedsatt orden
+nedsatt atferd
+brudd på ordensreglementet
+sendt hjem fra skolen
+sendt til rektor
+rektorsamtale*
+9A-sak*
+9 A-sak*
+elevsak*
+utestengt fra studiet
+utestenging*
+tap av studierett
+studiepermisjon*
+
+## Bokmål: more grades, exams and records
+vitnemål*
+kompetansebevis*
+karakterbevis*
+eksamensresultat*
+eksamenskarakter*
+eksamensfusk*
+juks*
+plagiat*
+plagiering*
+annullert eksamen
+eksamensklage*
+klagesensur*
+ny sensur
+begrunnelse for karakter
+begrunnelse for sensur
+ikke bestått
+strykkarakter*
+manglende vurderingsgrunnlag
+halvårsvurdering*
+terminkarakter*
+karakterutvikling*
+grunnskolepoeng*
+inntakspoeng*
+
+## English: more special needs and support
+special educational needs
+SEN support
+SENCO
+EHCP
+education health and care plan
+individualized education program
+individual education plan
+504 plan
+learning support
+learning difficult*
+dyscalculia
+dysgraphia
+dyspraxia
+speech and language therap*
+speech therapist*
+educational psychologist*
+school psychologist*
+school counselor*
+school counsellor*
+school nurse*
+one-to-one support
+extra time in exams
+extra time on exams
+exam accommodation*
+reasonable adjustment*
+academic accommodation*
+disability support
+learning plan*
+intervention plan*
+behaviour plan*
+behavior plan*
+behaviour support plan*
+behavior support plan*
+behavioural problem*
+behavioral problem*
+behaviour issue*
+behavior issue*
+conduct problem*
+emotional difficulties
+social difficulties
+hospital school*
+homebound instruction
+pupil premium
+free school meals
+looked-after child*
+young carer*
+English language learner*
+ELL student*
+ESL student*
+limited English proficiency
+
+## English: more absence, wellbeing and discipline
+school refusal
+school avoidance
+persistent absence
+persistently absent
+chronic absenteeism
+absenteeism
+unauthorised absence*
+unauthorized absence*
+attendance record*
+attendance concern*
+attendance warning*
+skipping class*
+skipped class*
+skipping school
+playing truant
+after-school detention
+given detention
+suspended from school
+school suspension*
+excluded from school
+exclusion from school
+permanent exclusion
+fixed-term exclusion
+disciplinary hearing*
+disciplinary record*
+disciplinary action
+disciplinary case*
+misconduct case*
+safeguarding concern*
+safeguarding referral*
+referral to social services
+welfare concern*
+cyberbullying
+cyberbullied
+harassed at school
+social exclusion
+dropped out of school
+dropped out of university
+dropped out of college
+withdrawn from school
+academic dismissal
+dismissed from the program
+repeating a year
+repeat a year
+held back a year
+kept back a year
+
+## English: more grades, exams and records
+academic misconduct
+academic dishonesty
+plagiarism
+plagiarised
+plagiarized
+contract cheating
+caught cheating
+exam misconduct
+academic probation
+academic warning
+grade complaint*
+grade dispute*
+failing grade*
+fail grade
+failed the course
+failed his exam
+failed her exam
+failed their exam
+resit exam*
+resits
+re-sit*
+retake exam*
+exam retake*
+deferred exam*
+transcript of records
+academic transcript*
+report card*
+term grade*
+final grade*
+predicted grade*
+GPA
+grade point average
+class rank*
+exam score*
+student record*
+pupil record*
+school record*
+education record*
+student file*
+pupil file*
+parent-teacher conference*
+candidate number*
+exam number*
+matriculation number*
+student ID number*
+enrolment number*
+enrollment number*
+
+## Bokmål: more learning difficulties, cases and exam arrangements
+lesevansker
+skrivevansker
+lesesvak*
+regnevansker
+motoriske vansker
+tale- og språkvansker
+stamming
+selektiv mutisme
+skolevansker
+tegnspråkopplæring*
+punktskrift*
+PP-rådgiver*
+spesialpedagogisk koordinator
+læringsmiljøsak*
+elevombud*
+mobbeombud*
+studentombud*
+bekymringssamtale*
+voldshendelse på skolen
+elevpermisjon*
+eksamen på eget rom
+ekstra tid på eksamen
+forlenget eksamenstid
+skikkethetsvurdering*
+skikkethetssak*
+tvilsmelding*
+utestengelse*
+klage på karakter
+klage på sensur
+trekk fra eksamen
+stryk på eksamen
+konteeksamen*

@@ -6,7 +6,7 @@
 # Plain words like maskin, linje, robot or presse are not listed alone: they
 # catch everyday text ("linjen i butikken", "presserende"). List the compound.
 
-## Machine makers
+## Shared: machine makers
 ABB
 Siemens
 Fanuc
@@ -58,7 +58,7 @@ serienummer*
 serienr
 fastvare*
 
-## Control systems
+## Shared: control systems
 PLS
 PLC
 SCADA
@@ -68,7 +68,7 @@ Modbus
 firmware
 firmware version*
 
-## English
+## English: machine park, lines and capacity
 production line*
 machine park
 cycle time*
@@ -77,3 +77,340 @@ process recipe*
 units per shift
 serial number*
 downtime
+
+## Shared: more control systems and protocols
+Profinet
+Profibus
+EtherNet/IP
+EtherCAT
+DCS
+VFD
+MTBF
+MTTR
+cobot*
+
+## Bokmål: more plant, lines and machines
+produksjonsanlegg*
+produksjonslokale*
+produksjonsprosess*
+produksjonsdata
+produksjonstall*
+produksjonsrate*
+produksjonsstans*
+produksjonsavvik*
+produksjonsstyring*
+produksjonsordre*
+produksjonsflyt*
+produksjonsoppsett*
+produksjonsutstyr*
+linjeoppsett*
+linjebalansering*
+linjehastighet*
+linjestopp*
+samlebånd*
+monteringslinje*
+pakkelinje*
+fyllelinje*
+støperi*
+valseverk*
+smelteverk*
+sveiseanlegg*
+lakkeringsanlegg*
+lakkeringslinje*
+sprøytestøp*
+støpemaskin*
+støpeform*
+verktøymaskin*
+bearbeidingssenter*
+maskineringssenter*
+dreiesenter*
+femakset*
+5-akset*
+plasmaskjær*
+vannskjær*
+stansemaskin*
+hydraulisk presse
+eksenterpresse*
+bukkemaskin*
+rørbukk*
+valsemaskin*
+slipemaskin*
+palleteringsrobot*
+palletering*
+plukkrobot*
+samarbeidende robot*
+robotarm*
+robotsveis*
+sveisecelle*
+transportbånd*
+lagerautomat*
+automatlager*
+fabrikkhall*
+fabrikklokale*
+fabrikkoppsett*
+fabrikklayout*
+anleggslayout*
+layouttegning*
+maskinoppstilling*
+maskinplassering*
+maskinliste*
+maskinoversikt*
+maskininvestering*
+maskinkjøp*
+maskinleverandør*
+robotleverandør*
+utstyrsleverandør*
+nøkkelleverandør*
+leverandørliste*
+leverandøravtale*
+innkjøpsavtale*
+
+## Bokmål: more capacity and output
+enheter per skift
+enheter per time
+enheter i timen
+stykk per time
+stk per time
+stk/t
+tonn per døgn
+tonn/døgn
+tonn per år
+tonn i året
+skiftordning*
+treskift*
+toskift*
+utnyttelsesgrad*
+maskinutnyttelse*
+oppetid*
+stopptid*
+omstillingstid*
+innstillingstid*
+gjennomløpstid*
+takttid*
+kassasjon*
+vrakprosent*
+feilrate*
+avviksrate*
+råvareforbruk*
+batchstørrelse*
+partistørrelse*
+seriestørrelse*
+ordrereserve*
+
+## Bokmål: more recipes, process and drawings
+prosessoppskrift*
+blandingsforhold*
+herdetid*
+herdetemperatur*
+sintertemperatur*
+ovnstemperatur*
+smeltetemperatur*
+prosesstemperatur*
+prosesstrykk*
+matehastighet*
+skjærehastighet*
+spindelturtall*
+verktøybane*
+CNC-program*
+NC-program*
+maskinprogram*
+toleransekrav*
+produktspesifikasjon*
+arbeidstegning*
+konstruksjonstegning*
+teknisk tegning*
+tekniske tegninger
+stykkliste*
+forretningshemmelighet*
+
+## Bokmål: more control systems and maintenance
+styresystem*
+automasjonssystem*
+kontrollsystem*
+prosesstyring*
+prosessanlegg*
+fjernstyring*
+fjerntilgang*
+fjernvedlikehold*
+brannmurregler
+frekvensomformer*
+servomotor*
+vedlikeholdsplan*
+vedlikeholdslogg*
+vedlikeholdsintervall*
+maskinhavari*
+havari*
+driftsstans*
+driftsavbrudd*
+driftsdata
+driftslogg*
+feillogg*
+alarmlogg*
+slitedel*
+
+## English: more plant, lines and machines
+assembly line*
+packaging line*
+filling line*
+bottling line*
+paint line*
+coating line*
+production hall*
+factory floor
+shop floor
+plant layout*
+factory layout*
+line layout*
+cell layout*
+robot cell*
+welding cell*
+welding robot*
+industrial robot*
+robotic arm*
+collaborative robot*
+pick-and-place
+palletizing robot*
+palletising robot*
+automated guided vehicle*
+conveyor belt*
+conveyor system*
+press brake*
+punch press*
+stamping press*
+hydraulic press*
+laser cutter*
+laser cutting machine*
+plasma cutter*
+waterjet cutter*
+CNC machine*
+CNC lathe*
+CNC mill*
+machining center*
+machining centre*
+turning center*
+5-axis machine*
+five-axis machine*
+injection molding machine*
+injection moulding machine*
+injection mold*
+injection mould*
+die casting
+casting mold*
+foundry
+rolling mill*
+smelter*
+machine count
+number of machines
+machine inventory
+equipment list*
+asset register*
+key supplier*
+machine supplier*
+equipment supplier*
+robot supplier*
+machine vendor*
+supplier list*
+vendor list*
+approved vendor list
+
+## English: more capacity and output
+capacity utilization
+capacity utilisation
+plant capacity
+production capacity
+line capacity
+output per hour
+units per hour
+parts per hour
+pieces per hour
+tons per day
+tonnes per day
+tons per year
+tonnes per year
+production volume*
+production rate*
+production output
+production target*
+production schedule*
+production plan*
+production order*
+production data
+production figures
+production stoppage*
+line stoppage*
+line speed*
+line balancing
+takt time*
+changeover time*
+setup time*
+machine uptime
+line uptime
+overall equipment effectiveness
+utilization rate*
+scrap rate*
+yield rate*
+defect rate*
+reject rate*
+first pass yield
+batch size*
+shift pattern*
+three-shift*
+two-shift*
+order backlog
+
+## English: more recipes, process and drawings
+curing time*
+curing temperature*
+sintering temperature*
+furnace temperature*
+melt temperature*
+process temperature*
+process pressure*
+process parameter*
+machine setting*
+machine parameter*
+recipe parameter*
+welding parameter*
+mixing ratio*
+feed rate*
+cutting speed*
+spindle speed*
+toolpath*
+tool path*
+G-code
+NC program*
+CNC program*
+bill of materials
+technical drawing*
+engineering drawing*
+part drawing*
+product specification*
+trade secret*
+
+## English: more control systems and maintenance
+control system*
+automation system*
+process control
+distributed control system
+industrial control system*
+remote access
+remote maintenance
+network segment*
+firewall rule*
+OT network*
+operational technology
+fieldbus
+frequency converter*
+variable frequency drive*
+servo motor*
+servo drive*
+maintenance plan*
+maintenance log*
+maintenance interval*
+machine breakdown*
+equipment failure*
+fault log*
+alarm log*
+wear part*
+preventive maintenance
+predictive maintenance

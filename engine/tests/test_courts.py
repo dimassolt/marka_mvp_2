@@ -69,6 +69,9 @@ def test_english_court_terms_are_found(term: str) -> None:
         "Dommen ble avsagt i går.",
         "Han liker barnesanger.",
         "Vi har en åpen dør for alle.",
+        "The dog grooming salon opened today.",
+        "She has a strong conviction about it.",
+        "Han er fortrolig med Python.",
     ],
 )
 def test_public_court_talk_is_not_a_courts_finding(text: str) -> None:

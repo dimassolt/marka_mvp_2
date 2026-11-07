@@ -2,6 +2,13 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { checkEngine, engineRunning } from '@/utils/engine-status';
 import {
+  downloadModel,
+  MODEL_SIZE_MB,
+  modelStatus,
+  progressPercent,
+  type ModelStatus,
+} from '@/utils/model';
+import {
   addSite,
   addWord,
   BUILT_IN_DOMAIN_INFO,
@@ -45,6 +52,23 @@ function useHostname(): string {
     });
   }, []);
   return host;
+}
+
+/** The Engine's GLiNER model. Asks again every 2 s while it downloads. */
+function useModelStatus(): [ModelStatus | null, () => void] {
+  const [status, setStatus] = useState<ModelStatus | null>(null);
+  useEffect(() => {
+    modelStatus().then(setStatus);
+  }, []);
+  useEffect(() => {
+    if (status?.state !== 'downloading') return;
+    const timer = setTimeout(() => modelStatus().then(setStatus), 2000);
+    return () => clearTimeout(timer);
+  }, [status]);
+  const download = () => {
+    downloadModel().then(setStatus);
+  };
+  return [status, download];
 }
 
 export function App() {
@@ -102,6 +126,7 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
   const host = useHostname();
   const on = isSiteOn(host, siteList, paused);
   const words = domains[domain];
+  const [model, download] = useModelStatus();
 
   return (
     <main class="popup">
@@ -132,6 +157,8 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
           </Icon>
         </button>
       </div>
+
+      {model && model.state !== 'ready' && <ModelNotice status={model} onDownload={download} />}
 
       <div class="stack">
         <div class="label-row">
@@ -339,6 +366,7 @@ function Settings({ onBack }: { onBack: () => void }) {
   const list = useItem(sites) ?? [];
   const paused = useItem(pausedSites) ?? [];
   const [site, setSite] = useState('');
+  const [model, download] = useModelStatus();
 
   const submit = async (e: Event) => {
     e.preventDefault();
@@ -394,6 +422,19 @@ function Settings({ onBack }: { onBack: () => void }) {
           </button>
         </form>
       </section>
+      {model && (
+        <section class="section">
+          <div class="heading-row">
+            <h2 class="heading">Name model</h2>
+            <span class="pill">{MODEL_PILL[model.state]}</span>
+          </div>
+          {model.state === 'ready' ? (
+            <p class="hint">GLiNER finds surnames, organisations and places. It runs on this computer.</p>
+          ) : (
+            <ModelNotice status={model} onDownload={download} flat />
+          )}
+        </section>
+      )}
       {paused.length > 0 && (
         <section class="section">
           <div class="sites-head">
@@ -421,6 +462,75 @@ function Settings({ onBack }: { onBack: () => void }) {
         </section>
       )}
     </main>
+  );
+}
+
+/** The Name model's state in Settings, next to its heading. */
+const MODEL_PILL: Record<ModelStatus['state'], string> = {
+  missing: 'Off',
+  downloading: 'Downloading',
+  ready: 'Downloaded',
+  failed: 'Failed',
+};
+
+/**
+ * Offers the GLiNER model download, like scripts/install.sh does. Without the model the
+ * Engine still checks everything else, so the popup says plainly what is off.
+ */
+function ModelNotice({
+  status,
+  onDownload,
+  flat = false,
+}: {
+  status: ModelStatus;
+  onDownload: () => void;
+  /** In Settings: no box and no title, the section heading says it. */
+  flat?: boolean;
+}) {
+  const percent = progressPercent(status.downloaded_mb);
+  return (
+    <div class={flat ? 'model model--flat' : 'model'} aria-live="polite">
+      {status.state === 'downloading' ? (
+        <>
+          {!flat && <h2 class="model__title">Downloading the name model</h2>}
+          <div
+            class="bar"
+            role="progressbar"
+            aria-label="Model download"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent}
+          >
+            <span class="bar__fill" style={{ width: `${percent}%` }} />
+          </div>
+          <p class="model__text">
+            <span class="mono">{status.downloaded_mb}</span> of about{' '}
+            <span class="mono">{MODEL_SIZE_MB}</span> MB. Keep the Engine running. You can close
+            this popup.
+          </p>
+        </>
+      ) : status.state === 'failed' ? (
+        <>
+          {!flat && <h2 class="model__title">Download failed</h2>}
+          <p class="error">{status.error}</p>
+          <p class="model__text">Check the internet connection and try again.</p>
+          <button type="button" class="btn" onClick={onDownload}>
+            Try again
+          </button>
+        </>
+      ) : (
+        <>
+          {!flat && <h2 class="model__title">Names and places are off</h2>}
+          <p class="model__text">
+            Download the GLiNER model to find surnames, organisations and places. About{' '}
+            {MODEL_SIZE_MB} MB, once. Your text never leaves this computer.
+          </p>
+          <button type="button" class="btn" onClick={onDownload}>
+            Download model
+          </button>
+        </>
+      )}
+    </div>
   );
 }
 

@@ -112,6 +112,29 @@ def test_long_text_is_sent_in_sentence_chunks_with_positions_in_the_whole_text()
     assert model.inputs == ["Kari bor i Oslo nå.", "Hun flytter snart til Bærum."]
 
 
+def test_without_the_model_the_detector_finds_nothing_instead_of_failing() -> None:
+    # The other Detectors still run; the popup offers to download the model.
+    def missing() -> FakeGliner:
+        raise ModelMissingError("not downloaded")
+
+    assert found(GlinerDetector(missing), "Kari bor i Bærum.") == []
+
+
+def test_the_model_loads_once_it_has_been_downloaded() -> None:
+    model = FakeGliner(("Kari", "person", 0.97))
+    downloaded = False
+
+    def load() -> FakeGliner:
+        if not downloaded:
+            raise ModelMissingError("not downloaded")
+        return model
+
+    detector = GlinerDetector(load)
+    assert found(detector, "Kari svarte.") == []
+    downloaded = True
+    assert found(detector, "Kari svarte.") == [("Kari", "person_name")]
+
+
 def test_missing_model_says_how_to_fetch_it(tmp_path: Path) -> None:
     # The Engine never downloads at runtime (ADR-0001); the install script does.
     with pytest.raises(ModelMissingError, match=r"fetch_gliner\.py"):

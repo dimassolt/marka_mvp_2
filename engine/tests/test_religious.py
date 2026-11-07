@@ -71,6 +71,8 @@ def test_english_religious_terms_are_found(term: str) -> None:
         "Medlemmene i fotballklubben møttes.",
         "Han er medlem av styret.",
         "Vi kjøpte en dåse med kjeks.",
+        "Our platform is vendor-agnostic.",
+        "Kollektivtrafikken går hvert tiende minutt.",
     ],
 )
 def test_public_church_talk_is_not_a_religious_finding(text: str) -> None:

@@ -1,10 +1,13 @@
 """HTTP adapter (docs/spec.md §2). Request and response bodies are never logged (ADR-0001)."""
 
-from fastapi import FastAPI, HTTPException
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 from ghost_engine import service
 from ghost_engine.findings import category_info
+from ghost_engine.model_download import ModelDownload, State, gliner_download
 
 app = FastAPI(title="Ghost Agent Engine")
 
@@ -53,3 +56,39 @@ def detect(request: DetectRequest) -> DetectResponse:
             for f in findings
         ]
     )
+
+
+# GLiNER model download (ADR-0004) -------------------------------------------------------
+
+# Origins that may start the download: the Extension's own pages. A request with no Origin
+# comes from a local tool such as curl. Web pages can't, so a site can't start 600 MB.
+EXTENSION_ORIGINS = ("chrome-extension://", "moz-extension://")
+
+
+class ModelOut(BaseModel):
+    state: State
+    downloaded_mb: int
+    error: str | None
+
+
+def model_download() -> ModelDownload:
+    return gliner_download()
+
+
+ModelDep = Annotated[ModelDownload, Depends(model_download)]
+
+
+@app.get("/model")
+def model_status(model: ModelDep) -> ModelOut:
+    status = model.status()
+    return ModelOut(state=status.state, downloaded_mb=status.downloaded_mb, error=status.error)
+
+
+@app.post("/model/download", status_code=202)
+def start_model_download(
+    model: ModelDep, origin: Annotated[str | None, Header()] = None
+) -> ModelOut:
+    if origin is not None and not origin.startswith(EXTENSION_ORIGINS):
+        raise HTTPException(status_code=403, detail="only the Extension can start the download")
+    status = model.start()
+    return ModelOut(state=status.state, downloaded_mb=status.downloaded_mb, error=status.error)
