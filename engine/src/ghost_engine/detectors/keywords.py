@@ -1,4 +1,13 @@
-"""Keyword-list Detector, compiled into one regex (used by Domains such as Health)."""
+"""Keyword-list Detector, compiled into one regex (used by Domains such as Health).
+
+Entry syntax, one entry per keyword:
+
+- `diabetes`        the whole word, any case
+- `sykemeld*`       the word plus any ending: sykemeldt, sykemelding, sykemeldingen
+- `*kreft`          any word ending in it, for Norwegian compounds: brystkreft, lungekreft
+- `*depresjon*`     both: fødselsdepresjonen
+- `høyt blodtrykk`  a phrase; the space matches any run of whitespace
+"""
 
 import re
 from collections.abc import Iterable
@@ -7,7 +16,16 @@ from ghost_engine.findings import Finding
 
 
 def _entry_pattern(entry: str) -> str:
-    return re.escape(entry)
+    compound = entry.startswith("*")
+    inflected = entry.endswith("*")
+    core = entry.strip("*")
+    words = (re.escape(word) for word in core.split())
+    pattern = r"\s+".join(words)
+    if compound:
+        pattern = r"\w*" + pattern
+    if inflected:
+        pattern += r"\w*"
+    return pattern
 
 
 def _compile(entries: Iterable[str]) -> re.Pattern[str]:
