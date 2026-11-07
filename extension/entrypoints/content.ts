@@ -1,5 +1,6 @@
 import tokens from '@/assets/tokens.css?raw';
-import type { Finding } from '@/utils/engine-status';
+import { engineRunning, type Finding } from '@/utils/engine-status';
+import { customDomains, isSiteOn, pausedSites, selectedDomain, sites } from '@/utils/popup-settings';
 import { colourOf, pointAt, type Colour, type Piece } from '@/utils/underlines';
 
 /** Scan 1 s after the last keystroke (docs/spec.md §3), so typing doesn't send every word. */
@@ -34,6 +35,8 @@ export default defineContentScript({
     const watched = new WeakSet<HTMLElement>();
     const overlays = new WeakMap<HTMLTextAreaElement, Overlay>();
     const timers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+    // Off until the site settings are read, so no text reaches the Engine on a site switched off.
+    let siteOn = false;
 
     const schedule = (field: HTMLElement, delay: number) => {
       clearTimeout(timers.get(field));
@@ -86,7 +89,7 @@ export default defineContentScript({
     async function scan(field: HTMLElement) {
       const pieces = piecesOf(field);
       const text = joined(pieces);
-      const findings: Finding[] = text.trim()
+      const findings: Finding[] = siteOn && text.trim()
         ? await browser.runtime.sendMessage({ type: 'detect', text }).catch(() => [])
         : [];
       // The user typed while the Engine answered: these offsets are stale. Scan again.
@@ -128,6 +131,27 @@ export default defineContentScript({
       },
       true,
     );
+    // The user picked another Domain or changed its words: scan every field again.
+    const rescanAll = () => {
+      for (const field of underlined.keys()) schedule(field, 0);
+    };
+    selectedDomain.watch(rescanAll);
+    customDomains.watch(rescanAll);
+    // The toolbar ghost wears sunglasses on this tab while it checks the site: site on, Engine running.
+    const showIcon = async () => {
+      const on = siteOn && (await engineRunning.getValue());
+      browser.runtime.sendMessage({ type: 'icon', on }).catch(() => {});
+    };
+    engineRunning.watch(showIcon);
+    // The site was switched on or off: scan again, which draws or clears the underlines.
+    const readSiteOn = async () => {
+      siteOn = isSiteOn(location.hostname, await sites.getValue(), await pausedSites.getValue());
+      rescanAll();
+      showIcon();
+    };
+    sites.watch(readSiteOn);
+    pausedSites.watch(readSiteOn);
+    readSiteOn();
     // The page may have focused its input before this script loaded.
     watch(fieldOf(document.activeElement));
   },
