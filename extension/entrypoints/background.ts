@@ -1,5 +1,5 @@
 import { checkEngine, detect, iconPathsFor } from '@/utils/engine-status';
-import { placeholderFor, type Vault } from '@/utils/vault';
+import { remember, type Vault } from '@/utils/vault';
 
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender) => {
@@ -37,11 +37,7 @@ let queue: Promise<unknown> = Promise.resolve();
 function placeholders(tabId: number, items: { value: string; prefix: string }[], save: boolean): Promise<string[]> {
   const run = queue.then(async () => {
     const vault: Vault = (await storage.getItem<Vault>(vaultKey(tabId))) ?? {};
-    const result = items.map(({ value, prefix }) => {
-      const placeholder = placeholderFor(vault, value, prefix);
-      vault[placeholder] = value;
-      return placeholder;
-    });
+    const result = items.map(({ value, prefix }) => remember(vault, value, prefix));
     if (save) await storage.setItem(vaultKey(tabId), vault);
     return result;
   });
