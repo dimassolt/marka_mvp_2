@@ -38,6 +38,12 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
 }
 Write-Host "uv, Node $(node --version) and Rust found"
 
+# fast_gliner bundles two native libraries built against different C++ runtimes (one static,
+# one dynamic), so linking fails even with the C++ Build Tools installed. Building both with the
+# dynamic runtime (/MD) fixes it. Only needed while uv builds fast_gliner; set for this script only.
+$env:CFLAGS_x86_64_pc_windows_msvc = "/MD"
+$env:CXXFLAGS_x86_64_pc_windows_msvc = "/MD"
+
 Step "Engine: Python dependencies (the first run builds fast_gliner, which takes a few minutes)"
 Run "engine" "uv" @("sync")
 
@@ -52,7 +58,11 @@ Run "engine" "uv" @("run", "pytest", "-q")
 
 Write-Host @"
 
-Done. Start the Engine and the Extension in two PowerShell windows:
+Done. Start the Engine and the Extension together (make isn't on Windows):
+
+  powershell -ExecutionPolicy Bypass -File scripts\start.ps1
+
+Ctrl+C stops both. Or run them in two windows:
 
   cd engine;    uv run ghost-engine
   cd extension; npm run dev
