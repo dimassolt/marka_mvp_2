@@ -509,13 +509,8 @@ svg {
   font-family: var(--font-outlier);
   font-size: 13px;
   color: var(--color-accent-ink);
+  white-space: pre;
   user-select: all;
-}
-
-.footnote {
-  padding: 12px 16px 14px;
-  font-size: 13px;
-  color: var(--color-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

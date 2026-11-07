@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { engineRunning, iconPathsFor } from './engine-status';
+import { checkEngine, engineRunning, iconPathsFor } from './engine-status';
 
 describe('iconPathsFor', () => {
   it('uses the ghost with sunglasses when the Engine is running', () => {
@@ -28,5 +28,39 @@ describe('engine running state', () => {
   it('remembers the last value it was set to', async () => {
     await engineRunning.setValue(true);
     expect(await engineRunning.getValue()).toBe(true);
+  });
+});
+
+describe('checkEngine', () => {
+  beforeEach(() => fakeBrowser.reset());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('marks the Engine running when GET /health answers 200 {"status": "ok"}', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ status: 'ok' }));
+    vi.stubGlobal('fetch', fetch);
+
+    await checkEngine();
+
+    expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:8765/health');
+    expect(await engineRunning.getValue()).toBe(true);
+  });
+
+  it('marks the Engine down when the request fails', async () => {
+    await engineRunning.setValue(true);
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    await checkEngine();
+
+    expect(await engineRunning.getValue()).toBe(false);
+  });
+
+  it('marks the Engine down while it answers 503 (models still loading)', async () => {
+    await engineRunning.setValue(true);
+    const loading = Response.json({ detail: 'loading' }, { status: 503 });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(loading));
+
+    await checkEngine();
+
+    expect(await engineRunning.getValue()).toBe(false);
   });
 });
