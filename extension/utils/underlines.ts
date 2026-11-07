@@ -26,6 +26,6 @@ export function pointAt<N>(pieces: Piece<N>[], offset: number, edge: 'start' | '
 }
 
 /** The underline colour of a Finding's group, as the Engine sends it (docs/spec.md §1). Unknown groups are teal. */
-export function colourOf(group: string): Colour {
+export function colourOf(group?: string): Colour {
   return group === 'id' || group === 'contact' ? group : 'domain';
 }

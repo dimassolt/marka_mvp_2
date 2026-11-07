@@ -66,6 +66,14 @@ export default defineContentScript({
       timers.set(field, setTimeout(() => scan(field), delay));
     };
 
+    // An empty field means the message was sent: its values are flagged again (spec §3, Ignore).
+    // Checked on every change, since typing the next message may start before the scan runs.
+    const changed = (field: HTMLElement) => {
+      const text = field instanceof HTMLTextAreaElement ? field.value : (field.textContent ?? '');
+      if (!text.trim()) ignored.delete(field);
+      schedule(field, TYPING_PAUSE_MS);
+    };
+
     // Any change in the field, however the site makes it, schedules a scan.
     const watch = (field: HTMLElement | null) => {
       if (!field || watched.has(field)) return;
@@ -75,7 +83,7 @@ export default defineContentScript({
         overlays.set(field, overlay);
         follow(field, overlay);
       } else {
-        new MutationObserver(() => schedule(field, TYPING_PAUSE_MS)).observe(field, {
+        new MutationObserver(() => changed(field)).observe(field, {
           subtree: true,
           childList: true,
           characterData: true,
@@ -96,7 +104,7 @@ export default defineContentScript({
       placeOverlay(field, overlay);
       if (overlay.text.data !== field.value) {
         overlay.text.data = field.value;
-        schedule(field, TYPING_PAUSE_MS);
+        changed(field);
       }
       requestAnimationFrame(() => follow(field, overlay));
     };
@@ -117,12 +125,10 @@ export default defineContentScript({
         : [];
       // The user typed while the Engine answered: these offsets are stale. Scan again.
       if (joined(piecesOf(field)) !== text) return schedule(field, TYPING_PAUSE_MS);
-      // An empty field means the message was sent: its values are flagged again.
-      if (!text.trim()) ignored.delete(field);
 
       underlined.set(
         field,
-        findings.flatMap(({ start, end, category, prefix, name, group }) => {
+        findings.flatMap(({ start, end, category, prefix = 'DATA', name = category, group }) => {
           const value = text.slice(start, end);
           if (ignored.get(field)?.has(ignoreKey(category, value))) return [];
           const range = rangeOf(pieces, start, end);
@@ -135,14 +141,18 @@ export default defineContentScript({
 
     /** Hide (spec §3): each value becomes its Placeholder, typed in with the editor's own command. */
     async function hide(field: HTMLElement, targets: Underline[]) {
-      const items = targets.map(({ value, prefix }) => ({ value, prefix }));
+      // The user typed since the scan: a value that has moved is left for the next scan. Checked
+      // before asking for Placeholders, so the Vault only gets values that are really hidden.
+      const before = joined(piecesOf(field));
+      const inPlace = targets.filter((u) => before.slice(u.start, u.end) === u.value);
+      const items = inPlace.map(({ value, prefix }) => ({ value, prefix }));
       const placeholders: string[] = await browser.runtime.sendMessage({ type: 'placeholders', items, save: true });
+      if (!Array.isArray(placeholders)) throw new Error('no Placeholders');
       const text = joined(piecesOf(field));
       // Last first, so each replacement leaves the offsets before it as they were.
-      const order = targets.map((u, i) => ({ u, placeholder: placeholders[i] }));
+      const order = inPlace.map((u, i) => ({ u, placeholder: placeholders[i] }));
       order.sort((a, b) => b.u.start - a.u.start);
       for (const { u, placeholder } of order) {
-        // The user typed since the scan: this value has moved, so leave it for the next scan.
         if (!placeholder || text.slice(u.start, u.end) !== u.value) continue;
         replace(field, piecesOf(field), u.start, u.end, placeholder);
       }
@@ -158,9 +168,14 @@ export default defineContentScript({
       draw();
     }
 
-    /** The underlined Finding under a point on screen, in any field. */
+    /**
+     * The underlined Finding under a point on screen, in any field. Only a field the point is
+     * really over counts, so a Finding scrolled out of its field opens no Card over the page.
+     */
     function underlineAt(x: number, y: number): Underline | undefined {
-      for (const list of underlined.values()) {
+      const top = document.elementFromPoint(x, y);
+      for (const [field, list] of underlined) {
+        if (!top || !field.contains(top)) continue;
         for (const u of list) {
           for (const r of u.range.getClientRects()) {
             if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return u;
@@ -178,12 +193,13 @@ export default defineContentScript({
 
     const openCard = (u: Underline) => {
       clearTimeout(lingerTimer);
-      if (open === u) return;
+      const reopened = open && sameFinding(open, u);
       open = u;
+      if (reopened) return;
       ui.showCard(u);
       browser.runtime
         .sendMessage({ type: 'placeholders', items: [{ value: u.value, prefix: u.prefix }], save: false })
-        .then(([placeholder]: string[]) => placeholder && open === u && ui.stamp(placeholder))
+        .then(([placeholder]: string[]) => placeholder && open && sameFinding(open, u) && ui.stamp(placeholder))
         .catch(() => {});
     };
     const closeCard = () => {
@@ -193,11 +209,16 @@ export default defineContentScript({
       ui.hideCard();
     };
 
-    ui.onAction((action) => {
-      if (action === 'hide' && open) hide(open.field, [open]);
-      if (action === 'ignore' && open) ignore(open.field, [open]);
+    ui.onAction(async (action) => {
       const all = current ? (underlined.get(current) ?? []) : [];
-      if (action === 'hide-all' && current) hide(current, all);
+      try {
+        if (action === 'hide' && open) await hide(open.field, [open]);
+        if (action === 'hide-all' && current) await hide(current, all);
+      } catch {
+        // E.g. the extension was reloaded. The Card or menu stays, so the user knows nothing was hidden.
+        return ui.showError();
+      }
+      if (action === 'ignore' && open) ignore(open.field, [open]);
       if (action === 'ignore-all' && current) ignore(current, all);
       closeCard();
       ui.closeMenu();
@@ -241,9 +262,15 @@ export default defineContentScript({
     );
 
     // Each frame: keep the Card on its Finding and the Ghost bar on the current field.
+    // A scan makes new Underlines: the open Card follows its Finding's new one, and closes only
+    // when the Finding is gone.
     const place = () => {
-      const all = [...underlined.values()].flat();
-      if (open && !all.includes(open)) closeCard();
+      if (open) {
+        const was = open;
+        const now = underlined.get(was.field)?.find((u) => sameFinding(u, was));
+        if (now) open = now;
+        else closeCard();
+      }
       if (open) ui.placeCard(open.range.getBoundingClientRect());
       const count = current?.isConnected ? (underlined.get(current)?.length ?? 0) : 0;
       ui.placeBar(count, current && count ? current.getBoundingClientRect() : null);
@@ -311,6 +338,11 @@ function ignoreKey(category: string, value: string) {
   return `${category}\n${value}`;
 }
 
+/** Two Underlines of the same Finding, e.g. from two scans of an unchanged field. */
+function sameFinding(a: Underline, b: Underline) {
+  return a.field === b.field && a.start === b.start && a.end === b.end && a.value === b.value;
+}
+
 /** The Range of [start, end) in the field's joined text. */
 function rangeOf(pieces: Piece<Text>[], start: number, end: number): Range | undefined {
   const a = pointAt(pieces, start, 'start');
@@ -364,11 +396,13 @@ function createUi() {
         <button type="button" class="secondary" disabled title="Coming soon">Rephrase</button>
         <button type="button" class="text" data-action="ignore">Ignore</button>
       </div>
+      <p class="error" role="alert" hidden>Couldn't hide. Try again.</p>
     </div>
     <div class="bar" hidden>
       <div class="menu" role="menu" aria-label="Ghost bar" hidden>
         <button type="button" role="menuitem" data-action="hide-all">Hide all<span class="count"></span></button>
         <button type="button" role="menuitem" data-action="ignore-all">Ignore all<span class="count"></span></button>
+        <p class="error" role="alert" hidden>Couldn't hide. Try again.</p>
       </div>
       <button type="button" class="tab" aria-expanded="false"><span class="count"></span>to check</button>
     </div>`;
@@ -380,7 +414,10 @@ function createUi() {
   const bar = $('.bar');
   const menu = $('.menu');
   const tab = $('.tab');
+  const errors = root.querySelectorAll<HTMLElement>('.error');
+  const showErrors = (show: boolean) => errors.forEach((e) => (e.hidden = !show));
   const setMenu = (isOpen: boolean) => {
+    if (menu.hidden !== !isOpen) showErrors(false);
     menu.hidden = !isOpen;
     tab.setAttribute('aria-expanded', String(isOpen));
   };
@@ -402,7 +439,12 @@ function createUi() {
       $('.name').textContent = u.name;
       $('.value').textContent = u.value;
       stamp.hidden = true;
+      showErrors(false);
       card.hidden = false;
+    },
+    /** Under the Card's buttons and the menu's: only the one on screen is seen. */
+    showError() {
+      showErrors(true);
     },
     stamp(placeholder: string) {
       stamp.textContent = `hide as ${placeholder}`;
@@ -464,6 +506,8 @@ const UI_STYLES = `
   .secondary { padding: 0 12px; border: 1px solid var(--color-rule); background: var(--color-paper-2); color: var(--color-ink); box-shadow: var(--shadow-mould-clear); }
   .text { padding: 0 6px; border: 0; background: transparent; color: var(--color-muted); }
   .text:hover { color: var(--color-ink); }
+  .error { margin: 0; padding: 0 16px 14px; color: var(--color-cat-id-ink); font-size: var(--text-xs); }
+  .menu .error { padding: 4px 10px; }
 
   .bar { position: fixed; display: flex; flex-direction: column; align-items: flex-end; font-family: var(--font-body); }
   .tab {
