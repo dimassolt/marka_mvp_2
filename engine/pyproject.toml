@@ -36,6 +36,8 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+# Norwegian text and en dashes are intentional.
+ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.mypy]
 strict = true

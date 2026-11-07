@@ -70,8 +70,16 @@ _PASSWORD = re.compile(
     re.IGNORECASE,
 )
 
-_EMAIL = re.compile(
-    r"(?<![\w.%+-])[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}(?![\w-])"
+_EMAIL = re.compile(r"(?<![\w.%+-])[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}(?![\w-])")
+
+# A phone number must not be a slice of a longer run of digit groups.
+_NOT_AFTER_DIGITS = r"(?<![\w+])(?<!\d[ -])"
+_NOT_BEFORE_DIGITS = r"(?![ -]?\d)(?!\w)"
+_PHONE_NO = re.compile(
+    _NOT_AFTER_DIGITS + r"(?:(?:\+|00)47 ?)?[2-9]\d(?: ?\d){6}" + _NOT_BEFORE_DIGITS
+)
+_PHONE_INTL = re.compile(
+    _NOT_AFTER_DIGITS + r"\+(?!47)[1-9]\d{0,2}(?:[ -]?\d){6,12}" + _NOT_BEFORE_DIGITS
 )
 
 
@@ -103,6 +111,8 @@ _RULES: tuple[_Rule, ...] = (
     _Rule(pattern=_SECRET, classify=_always("secret"), confidence=0.95),
     _Rule(pattern=_PASSWORD, classify=_always("password"), confidence=0.9, group=1),
     _Rule(pattern=_EMAIL, classify=_always("email"), confidence=0.95),
+    _Rule(pattern=_PHONE_NO, classify=_always("phone"), confidence=0.85),
+    _Rule(pattern=_PHONE_INTL, classify=_always("phone"), confidence=0.85),
 )
 
 

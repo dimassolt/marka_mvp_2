@@ -76,7 +76,12 @@ def test_twelve_digits_are_too_short_for_a_card() -> None:
 
 @pytest.mark.parametrize(
     "iban",
-    ["NO9386011117947", "NO93 8601 1117 947", "GB82WEST12345698765432", "GB82 WEST 1234 5698 7654 32"],
+    [
+        "NO9386011117947",
+        "NO93 8601 1117 947",
+        "GB82WEST12345698765432",
+        "GB82 WEST 1234 5698 7654 32",
+    ],
 )
 def test_iban_with_valid_mod97_is_found(iban: str) -> None:
     assert found(f"IBAN: {iban}.") == [("iban", iban)]
@@ -146,4 +151,38 @@ def test_email_is_found_without_trailing_full_stop(email: str) -> None:
 
 @pytest.mark.parametrize("text", ["@kari på X", "kari@localhost", "skriv kari @ example.com"])
 def test_email_lookalikes_are_not_found(text: str) -> None:
+    assert found(text) == []
+
+
+# phone -------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "phone",
+    [
+        "+47 912 34 567",
+        "+4791234567",
+        "0047 91234567",
+        "91234567",
+        "912 34 567",
+        "22 22 22 22",
+        "+44 20 7946 0958",
+        "+1-202-555-0143",
+    ],
+)
+def test_phone_number_is_found(phone: str) -> None:
+    assert found(f"Ring {phone} i dag") == [("phone", phone)]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "kode 12345678",  # Norwegian numbers don't start with 0 or 1
+        "kari er 34 år",
+        "kort 4111 1111 1111 1112",  # failed card, not a phone inside it
+        "id 912345678",  # 9 digits
+        "+47 9123",
+    ],
+)
+def test_phone_lookalikes_are_not_found(text: str) -> None:
     assert found(text) == []
