@@ -159,9 +159,14 @@ export default defineContentScript({
       draw();
     }
 
-    /** The underlined Finding under a point on screen, in any field. */
+    /**
+     * The underlined Finding under a point on screen, in any field. Only a field the point is
+     * really over counts, so a Finding scrolled out of its field opens no Card over the page.
+     */
     function underlineAt(x: number, y: number): Underline | undefined {
-      for (const list of underlined.values()) {
+      const top = document.elementFromPoint(x, y);
+      for (const [field, list] of underlined) {
+        if (!top || !field.contains(top)) continue;
         for (const u of list) {
           for (const r of u.range.getClientRects()) {
             if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return u;
