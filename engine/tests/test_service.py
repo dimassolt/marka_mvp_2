@@ -48,3 +48,14 @@ def test_free_domain_gives_base_findings_only() -> None:
         Finding(start=0, end=4, category="person_name", confidence=0.6),
         Finding(start=23, end=34, category="fodselsnummer", confidence=0.99),
     ]
+
+
+@pytest.mark.gliner
+def test_gliner_findings_win_over_a_shorter_first_name(demo_note: str) -> None:
+    # docs/spec.md §2 overlap rule: "Kari Nordmann" (GLiNER) is longer than "Kari"
+    # (first-name list), so it wins. Bærum (place) is found too.
+    findings = detect(demo_note, domain="health")
+    texts = [(demo_note[f.start : f.end], f.category) for f in findings]
+
+    assert ("Kari Nordmann", "person_name") in texts
+    assert ("Bærum", "location") in texts

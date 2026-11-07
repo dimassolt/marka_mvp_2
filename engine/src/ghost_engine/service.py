@@ -5,6 +5,7 @@ from dataclasses import replace
 
 from ghost_engine.detectors.base_regex import BaseRegexDetector
 from ghost_engine.detectors.first_names import first_name_detector
+from ghost_engine.detectors.gliner import gliner_detector
 from ghost_engine.detectors.health import health_detector
 from ghost_engine.detectors.keywords import KeywordDetector
 from ghost_engine.findings import Finding, resolve_overlaps
@@ -13,7 +14,12 @@ from ghost_engine.ports import Detector
 
 DEFAULT_DOMAIN = "free"
 
-BASE_DETECTORS: tuple[Detector, ...] = (BaseRegexDetector(), first_name_detector())
+# GLiNER loads its model lazily, on the first detect call.
+BASE_DETECTORS: tuple[Detector, ...] = (
+    BaseRegexDetector(),
+    first_name_detector(),
+    gliner_detector(),
+)
 
 DOMAIN_DETECTORS: dict[str, Callable[[], Sequence[Detector]]] = {
     "free": lambda: (),  # Base Findings only

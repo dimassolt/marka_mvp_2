@@ -1,7 +1,7 @@
 """Refresh data/first_names.txt from SSB table 10501 (first names with 200+ bearers).
 
 Run from engine/: uv run python scripts/fetch_first_names.py
-This is the only engine code that uses the network, and it only runs by hand.
+This and fetch_gliner.py are the only engine code that uses the network, and they only run by hand.
 """
 
 import json
