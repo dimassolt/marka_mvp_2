@@ -584,6 +584,54 @@ svg {
   gap: 2px;
 }
 
+/* Name model (GLiNER) download */
+
+.model {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 16px 14px;
+  padding: 12px 14px 14px;
+  background: var(--color-paper-3);
+  border-radius: var(--radius-card);
+}
+
+.model--flat {
+  margin: 0;
+  padding: 0;
+  background: none;
+}
+
+.model__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.model__text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-ink-2);
+}
+
+.bar {
+  align-self: stretch;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-rule-2);
+  overflow: hidden;
+}
+
+.bar__fill {
+  display: block;
+  height: 100%;
+  background: var(--color-stamp);
+  transition: width var(--dur-short) var(--ease-out);
+}
+
 /* Engine down */
 
 .down {
