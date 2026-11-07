@@ -1,0 +1,56 @@
+# Courts Domain keywords, Bokmål and English (docs/spec.md §1, Category `courts`).
+# Words that mark a case as closed to the public, a decision as not yet announced,
+# or a case type that is sensitive by nature. Same syntax as health_keywords.txt.
+#
+# Published decisions (Lovdata references like HR-2023-1234-A) are public, and
+# plain court words like retten, dom or avsagt are not listed alone.
+
+## Bokmål: closed or confidential
+dørlukking*
+lukkede dører
+lukket rettsmøte
+referatforbud*
+forbud mot offentlig gjengivelse
+unntatt offentlighet*
+taushetsplikt*
+rådslagning*
+votering*
+utkast til dom*
+utkast til kjennelse*
+utkast til beslutning*
+ikke avsagt
+før avsigelse
+
+## Bokmål: sensitive case types and parties
+barnevern*
+omsorgsovertakelse*
+foreldretvist*
+foreldreansvar*
+fast bosted
+samvær*
+barneloven*
+*voldtekt*
+seksuallovbrudd*
+overgrep*
+mindreårig*
+tvungent psykisk helsevern
+vergemål*
+fornærmede*
+siktede*
+tiltalte*
+
+## English
+closed doors
+in camera
+reporting ban
+draft judgment*
+draft ruling*
+sealed
+child custody
+custody dispute
+child welfare
+sexual offence*
+sexual assault*
+rape
+deliberation*
+victim*

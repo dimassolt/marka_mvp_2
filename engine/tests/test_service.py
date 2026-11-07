@@ -48,3 +48,21 @@ def test_free_domain_gives_base_findings_only() -> None:
         Finding(start=0, end=4, category="person_name", confidence=0.6),
         Finding(start=23, end=34, category="fodselsnummer", confidence=0.99),
     ]
+
+
+@pytest.mark.parametrize(
+    ("domain", "text", "word"),
+    [
+        ("education", "Ola har IOP i år", "IOP"),
+        ("courts", "Saken går for lukkede dører", "lukkede dører"),
+        ("industrial", "Vi bruker Fanuc på linja", "Fanuc"),
+        ("religious", "Kari kom til sjelesorg", "sjelesorg"),
+    ],
+)
+def test_new_domains_give_their_domain_findings(domain: str, text: str, word: str) -> None:
+    findings = [f for f in detect(text, domain=domain) if f.category == domain]
+    assert [text[f.start : f.end] for f in findings] == [word]
+
+
+def test_free_domain_ignores_new_domain_words() -> None:
+    assert detect("Saken går for lukkede dører", domain="free") == []

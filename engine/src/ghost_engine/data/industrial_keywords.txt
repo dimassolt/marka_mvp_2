@@ -1,0 +1,79 @@
+# Industrial Domain keywords, Bokmål and English (docs/spec.md §1, Category `industrial`).
+# Words that reveal how a plant produces: which machine makers it uses, its
+# machine park, its lines, capacity, recipes and control systems.
+# Same syntax as health_keywords.txt.
+#
+# Plain words like maskin, linje, robot or presse are not listed alone: they
+# catch everyday text ("linjen i butikken", "presserende"). List the compound.
+
+## Machine makers
+ABB
+Siemens
+Fanuc
+KUKA
+Yaskawa
+Trumpf
+DMG Mori
+Mazak
+Okuma
+Haas Automation
+Amada
+Bystronic
+Heidenhain
+Beckhoff
+Rockwell
+Allen-Bradley
+Schneider Electric
+Mitsubishi Electric
+Omron
+Bosch Rexroth
+Festo
+Universal Robots
+Stäubli
+Comau
+
+## Bokmål: machine park and lines
+maskinpark*
+produksjonslinj*
+produksjonshall*
+produksjonsvolum*
+produksjonsplan*
+CNC
+CNC-maskin*
+sveiserobot*
+industrirobot*
+robotcelle*
+kantpresse*
+laserskjær*
+dreiebenk*
+fresemaskin*
+*kapasitet*
+syklustid*
+taktid*
+nedetid*
+OEE
+resept*
+prosessparameter*
+serienummer*
+serienr
+fastvare*
+
+## Control systems
+PLS
+PLC
+SCADA
+HMI
+OPC UA
+Modbus
+firmware
+firmware version*
+
+## English
+production line*
+machine park
+cycle time*
+throughput
+process recipe*
+units per shift
+serial number*
+downtime

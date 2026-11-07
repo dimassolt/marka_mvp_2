@@ -1,0 +1,68 @@
+# Religious Domain keywords, Bokmål and English (docs/spec.md §1, Category `religious`).
+# Words that tie a person to a faith community: membership, pastoral care,
+# baptism, confirmation, weddings, funerals and giving. Neutral across faiths.
+# Same syntax as health_keywords.txt.
+#
+# Public church talk (service times, the church building, staff contacts) is
+# not sensitive, so words like gudstjeneste, kirke or prest are not listed alone.
+
+## Bokmål: membership
+menighet*
+medlemsregister*
+innmelding*
+utmelding*
+melde seg inn
+melde seg ut
+meldt seg inn
+meldt seg ut
+meldte seg inn
+meldte seg ut
+trossamfunn*
+livssynssamfunn*
+kirkeskatt*
+kirkeavgift*
+givertjeneste*
+
+## Bokmål: pastoral care
+sjelesorg*
+skriftemål*
+forbønn*
+
+## Bokmål: ceremonies
+dåp
+dåpen
+dåps*
+døpt*
+døpe*
+konfirmant*
+konfirmasjon*
+vigsel*
+vielse*
+gravferd*
+begravelse*
+bisettelse*
+jordfestelse*
+
+## Bokmål: places and protection
+moské*
+moske
+moskeen
+moskeer
+synagoge*
+gurdwara*
+kirkeasyl*
+
+## English
+parishioner*
+congregation*
+pastoral care
+confession*
+baptism*
+baptized
+baptised
+confirmation class*
+funeral*
+church member*
+prayer request*
+mosque*
+synagogue*
