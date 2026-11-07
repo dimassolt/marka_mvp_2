@@ -147,6 +147,57 @@ svg {
   color: var(--color-muted);
 }
 
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* "?" by the Domain label: its tooltip shows on hover, and on keyboard focus. */
+.info {
+  position: relative;
+  display: flex;
+}
+
+.info__btn {
+  display: flex;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: help;
+}
+
+.info__btn:hover {
+  color: var(--color-ink);
+}
+
+.info__tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: -60px;
+  z-index: 1;
+  display: none;
+  width: 240px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: var(--color-paper);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.info:hover .info__tip,
+.info__btn:focus-visible + .info__tip {
+  display: block;
+}
+
+.info__line {
+  display: block;
+  margin-top: 4px;
+}
+
 .hint {
   font-size: 13px;
   line-height: 1.5;
@@ -327,7 +378,16 @@ svg {
   font-size: 15px;
 }
 
+/*
+ * Our own chevron, 12px from the right edge like the text on the left; the browser's arrow sat
+ * further in. Its colour is --color-muted as hex, since a data URL can't read CSS variables.
+ */
 .select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235f5650' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
   font-weight: 500;
   cursor: pointer;
 }
@@ -339,6 +399,21 @@ svg {
 
 .input--sm {
   height: 40px;
+}
+
+/*
+ * Search reads as a search bar, not a form field like Add: pill, no border, magnifier on the left
+ * (--color-muted as hex, since a data URL can't read CSS variables).
+ */
+.input--search {
+  height: 34px;
+  padding-left: 34px;
+  border-color: transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-paper-3)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235f5650' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E")
+    no-repeat left 12px center;
+  font-size: 14px;
 }
 
 .input--strong {
@@ -354,6 +429,11 @@ svg {
   outline: none;
   padding: 0 11px;
   border: 2px solid var(--color-focus);
+}
+
+/* The thicker focus border takes 1px; keep the text clear of the magnifier. */
+.input--search:focus {
+  padding-left: 33px;
 }
 
 .input[aria-invalid='true'] {
@@ -395,13 +475,33 @@ svg {
 
 /* Word chips */
 
+/* About four rows of chips, then the list scrolls. */
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/*
+ * A thin bar that stays visible when the words don't fit; macOS hides the default one until you
+ * scroll. Only the -webkit- rules: Chromium ignores them once scrollbar-width/-color is set.
+ */
+.chips::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chips::-webkit-scrollbar-thumb {
+  background: var(--color-rule-2);
+  border-radius: var(--radius-pill);
+}
+
+.chips::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
 }
 
 .word {
@@ -415,9 +515,19 @@ svg {
   color: var(--color-cat-domain-ink);
   font-size: 14px;
   font-weight: 500;
+  /* A long word stays on one line with "…"; hover shows it whole. */
+  max-width: 100%;
+}
+
+.word__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .word__remove {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
