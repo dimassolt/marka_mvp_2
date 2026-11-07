@@ -30,6 +30,7 @@ Type: Schibsted Grotesk 700 for headings, Instrument Sans 400/500 for everything
 - **Placeholder:** plain text in the site's editor, `[PREFIX_n]`. We never style it in the field.
 - **Restore:** the original value with a 2px cobalt dotted underline. Hover: dark ink hint, "Shown only on your screen. The AI saw [PERSON_1]".
 - **Popup:** 330 wide. Header (ghost, name, status chip), site row (switch and settings button), Domain select with a plus for a new Domain, then your words as teal chips with Add. Views: your Domain, built-in Domain, New Domain, Settings (Sites list, `*` = all, Name model), Engine down (with `cd engine && uv run ghost-engine`). While the GLiNER model isn't downloaded, a `--color-paper-3` box under the site row: "Names and places are off", a black **Download model** button, then a cobalt progress bar with the MB in DM Mono.
+- **Onboarding:** a full tab. One paper label (`--color-paper-2`, `--radius-surface`, `--shadow-lift`) up to 680 wide on the paper ground, with a dashed tear-off rule under the masthead (ghost, name, step dots) and above the footer (Back as a text button, the next step as a primary button). Domains are radio cards: a 2px black border when chosen. The practice field reuses the underline, Card, stamp and Ghost bar styles above.
 
 ## Controls
 
