@@ -39,7 +39,7 @@ fornærmede*
 siktede*
 tiltalte*
 
-## English
+## English: closed or confidential, sensitive case types
 closed doors
 in camera
 reporting ban
@@ -54,3 +54,299 @@ sexual assault*
 rape
 deliberation*
 victim*
+
+## Bokmål: more closed, confidential or unannounced
+lukket for offentligheten
+navneforbud*
+klausulert adresse
+sperret adresse
+fortrolig adresse
+strengt fortrolig
+fortrolig informasjon
+taushetsbelagt*
+gradert informasjon
+utkast til domsslutning
+domsutkast*
+kjennelsesutkast*
+ikke offentliggjort
+før offentliggjøring
+embargo*
+skjermet vitne*
+anonymt vitne*
+anonym vitneførsel
+dommeravhør*
+tilrettelagt avhør*
+videoavhør*
+barnehus*
+kommunikasjonskontroll*
+romavlytting*
+telefonavlytting*
+dataavlesing*
+hemmelig ransaking
+skjult etterforskning
+varetekt*
+fengslingsmøte*
+brev- og besøksforbud
+besøksforbud*
+kontaktforbud*
+oppholdsforbud*
+omvendt voldsalarm
+voldsalarm*
+voldsoffererstatning*
+bistandsadvokat*
+konfliktråd*
+
+## Bokmål: more sentences, parties and records
+ungdomsstraff*
+ungdomsoppfølging*
+samfunnsstraff*
+betinget fengsel
+ubetinget fengsel
+forvaring*
+tvungen omsorg
+rettspsykiatrisk*
+judisiell observasjon
+sakkyndig erklæring*
+personundersøkelse*
+strafferegister*
+politiattest*
+domfelt*
+domfellelse*
+straffesak*
+påtaleunnlatelse*
+politianmeldelse*
+politianmeldt*
+tiltalebeslutning*
+siktelse*
+siktet for
+tiltalt for
+dømt for
+mistenkt for
+soning*
+prøveløslat*
+fotlenke*
+elektronisk kontroll
+
+## Bokmål: more child welfare, family and guardianship
+akuttvedtak*
+akuttplassering*
+fosterhjem*
+beredskapshjem*
+institusjonsplassering*
+tvangsadopsjon*
+adopsjonssak*
+tilbakeføring av omsorg
+fylkesnemnd*
+barneverns- og helsenemnd*
+omsorgsrett*
+daglig omsorg
+delt bosted
+bostedsforelder*
+foreldremekling*
+barnebortføring*
+haagkonvensjon*
+barnefordeling*
+skilsmisse*
+separasjonsbevilling*
+ektepakt*
+dødsboskifte*
+offentlig skifte
+arveoppgjør*
+uskifte*
+fremtidsfullmakt*
+umyndiggjør*
+fratatt rettslig handleevne
+tvangsinnleggelse*
+tvangsvedtak*
+tvangsmedisinering*
+tvangsbehandling*
+kontrollkommisjon*
+
+## Bokmål: more sexual offences, violence and crime
+seksuelt overgrep*
+seksuell omgang med barn
+incest*
+seksuell trakassering
+seksualisert vold
+overgrepsmateriale*
+overgrepsbilder
+grooming av barn
+nettgrooming
+kroppskrenkelse*
+legemsbeskadigelse*
+familievold*
+partnervold*
+vold i nære relasjoner
+mishandling i nære relasjoner
+æresrelatert vold
+tvangsekteskap*
+kjønnslemlestelse*
+menneskehandel*
+drapsforsøk*
+drapssak*
+drapssiktet*
+drapstiltalt*
+barnedrap*
+narkotikaforbrytelse*
+hvitvasking*
+underslag*
+bedrageri*
+trygdesvindel*
+utlendingssak*
+asylsak*
+utvisningsvedtak*
+utvisningssak*
+
+## English: more closed, confidential or unannounced
+closed hearing*
+private hearing*
+held in private
+not for publication
+publication ban
+gag order*
+anonymity order*
+suppression order*
+sealed record*
+sealed file*
+under seal
+under embargo
+draft decision*
+draft verdict*
+unannounced verdict
+verdict not yet delivered
+judicial deliberation*
+protected witness*
+anonymous witness*
+witness protection
+forensic interview*
+video-recorded interview*
+wiretap*
+phone tap*
+covert surveillance
+covert investigation*
+secret search*
+pretrial detention
+remand in custody
+remanded in custody
+detention hearing*
+restraining order*
+protective order*
+non-molestation order*
+contact ban
+victim compensation
+counsel for the victim
+victim's lawyer
+
+## English: more sentences, parties and records
+juvenile court
+juvenile offender*
+youth sentence*
+community sentence*
+suspended sentence*
+prison sentence*
+preventive detention
+compulsory care
+involuntary commitment
+involuntary admission
+compulsory mental health care
+forensic psychiatr*
+psychiatric evaluation*
+pre-sentence report*
+criminal record*
+police certificate*
+convicted
+criminal conviction*
+prior conviction*
+charged with
+accused of
+indicted
+indictment*
+suspected of
+police report*
+reported to the police
+defendant*
+the accused
+aggrieved party
+injured party
+complainant*
+parole*
+electronic tagging
+ankle monitor*
+early release
+
+## English: more child welfare, family and guardianship
+care order*
+emergency placement*
+foster care
+foster home*
+foster parent*
+child protection
+child protective services
+removal of a child
+county social welfare board*
+adoption case*
+forced adoption*
+parental responsibility
+custody battle*
+shared custody
+sole custody
+joint custody
+visitation right*
+contact arrangement*
+parental abduction
+child abduction
+Hague Convention
+divorce*
+separation agreement*
+prenuptial agreement*
+estate dispute*
+inheritance dispute*
+probate*
+legal guardian*
+guardianship
+conservatorship*
+lasting power of attorney
+legal incapacity
+deprived of legal capacity
+involuntary treatment
+forced medication
+coercive treatment
+
+## English: more sexual offences, violence and crime
+sexual abuse
+child sexual abuse
+sexual exploitation
+sexual harassment
+indecent assault
+child abuse material
+CSAM
+aggravated assault
+bodily harm
+grievous bodily harm
+domestic violence
+domestic abuse
+intimate partner violence
+honour-based violence
+honor-based violence
+forced marriage*
+female genital mutilation
+FGM
+human trafficking
+attempted murder
+murder case*
+murder charge*
+manslaughter
+homicide*
+infanticide
+drug offence*
+drug offense*
+drug trafficking
+money laundering
+embezzlement
+fraud case*
+benefit fraud
+welfare fraud
+immigration case*
+asylum case*
+deportation order*
+deportation case*
