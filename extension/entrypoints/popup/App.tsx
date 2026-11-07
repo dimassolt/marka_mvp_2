@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { checkEngine, engineRunning } from '@/utils/engine-status';
+import { openOnboarding } from '@/utils/onboarding';
 import {
   addSite,
   addWord,
@@ -425,6 +426,12 @@ function Settings({ onBack }: { onBack: () => void }) {
           </ul>
         </section>
       )}
+      <div class="tear" />
+      <section class="section">
+        <button type="button" class="link-btn" onClick={() => openOnboarding().then(() => window.close())}>
+          Take the welcome tour again
+        </button>
+      </section>
     </main>
   );
 }
