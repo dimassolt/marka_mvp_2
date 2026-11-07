@@ -70,6 +70,10 @@ _PASSWORD = re.compile(
     re.IGNORECASE,
 )
 
+_EMAIL = re.compile(
+    r"(?<![\w.%+-])[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}(?![\w-])"
+)
+
 
 _RULES: tuple[_Rule, ...] = (
     _Rule(
@@ -98,6 +102,7 @@ _RULES: tuple[_Rule, ...] = (
     ),
     _Rule(pattern=_SECRET, classify=_always("secret"), confidence=0.95),
     _Rule(pattern=_PASSWORD, classify=_always("password"), confidence=0.9, group=1),
+    _Rule(pattern=_EMAIL, classify=_always("email"), confidence=0.95),
 )
 
 

@@ -132,3 +132,18 @@ def test_password_drops_sentence_punctuation_at_the_end() -> None:
 @pytest.mark.parametrize("text", ["glemt passordet mitt", "passord: ", "snowpw: x"])
 def test_password_without_a_labelled_value_is_not_found(text: str) -> None:
     assert found(text) == []
+
+
+# email -------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "email", ["kari.nordmann@example.com", "ola+ai@sykehus.helse.no", "a_b-c@ex-ample.co.uk"]
+)
+def test_email_is_found_without_trailing_full_stop(email: str) -> None:
+    assert found(f"send til {email}.") == [("email", email)]
+
+
+@pytest.mark.parametrize("text", ["@kari på X", "kari@localhost", "skriv kari @ example.com"])
+def test_email_lookalikes_are_not_found(text: str) -> None:
+    assert found(text) == []
