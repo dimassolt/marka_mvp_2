@@ -37,6 +37,18 @@ def test_demo_note_gives_the_eight_findings_of_acceptance_check_1(demo_note: str
     ]
 
 
+def test_words_become_custom_findings() -> None:
+    # A custom Domain sends its own words; each match is Category "custom".
+    response = client.post(
+        "/detect", json={"text": "Møte på Ullevål om prosjektet", "words": ["ullevål", "prosjekt*"]}
+    )
+
+    assert [(f["category"], f["start"], f["end"]) for f in response.json()["findings"]] == [
+        ("custom", 8, 15),
+        ("custom", 19, 29),
+    ]
+
+
 def test_unknown_domain_returns_422() -> None:
     response = client.post("/detect", json={"text": "tekst", "domain": "school"})
 

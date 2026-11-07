@@ -11,6 +11,7 @@ app = FastAPI(title="Ghost Agent Engine")
 class DetectRequest(BaseModel):
     text: str
     domain: str = service.DEFAULT_DOMAIN
+    words: list[str] = []
 
 
 class FindingOut(BaseModel):
@@ -33,7 +34,7 @@ def health() -> dict[str, str]:
 @app.post("/detect")
 def detect(request: DetectRequest) -> DetectResponse:
     try:
-        findings = service.detect(request.text, request.domain)
+        findings = service.detect(request.text, request.domain, request.words)
     except service.UnknownDomainError as error:
         raise HTTPException(status_code=422, detail=f"unknown domain: {error}") from None
     return DetectResponse(

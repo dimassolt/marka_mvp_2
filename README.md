@@ -38,7 +38,7 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
 
 **Must** (no demo without these):
 - the Base and Health Detectors, plus the overlap rule
-- underlines, the Card, the Ghost bar
+- underlines, the Card, the Ghost bar, also in a `<textarea>` through an overlay (ChatGPT's input is one)
 - Hide, Hide all, Ignore, Undo, the Vault
 - Rephrase with Qwen
 - Restore on ChatGPT while the answer streams in
@@ -48,7 +48,6 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
 - the demo running in Opera
 
 **Could:**
-- `<textarea>` support through an overlay layer
 - a School Domain
 
 **Later:**
