@@ -21,3 +21,31 @@ def test_spans_point_into_the_original_text_without_surrounding_whitespace() -> 
 
 def test_empty_text_has_no_sentences() -> None:
     assert split_sentences(" \n ") == []
+
+
+def test_abbreviations_do_not_end_a_sentence() -> None:
+    text = "Hun bruker f.eks. insulin, dvs. hver dag. Ring dr. Hansen kl. 14. Takk."
+
+    assert sentences(text) == [
+        "Hun bruker f.eks. insulin, dvs. hver dag.",
+        "Ring dr. Hansen kl. 14.",
+        "Takk.",
+    ]
+
+
+def test_english_abbreviations_do_not_end_a_sentence() -> None:
+    assert sentences("Ask Dr. Smith, e.g. tomorrow. Done.") == [
+        "Ask Dr. Smith, e.g. tomorrow.",
+        "Done.",
+    ]
+
+
+def test_ordinal_dates_do_not_end_a_sentence() -> None:
+    assert sentences("Innlagt 1. januar og utskrevet 3. mars. Nå hjemme.") == [
+        "Innlagt 1. januar og utskrevet 3. mars.",
+        "Nå hjemme.",
+    ]
+
+
+def test_decimal_numbers_stay_in_one_sentence() -> None:
+    assert sentences("Blodsukker 7.5 i dag. Bra.") == ["Blodsukker 7.5 i dag.", "Bra."]
