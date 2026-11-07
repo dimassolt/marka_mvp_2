@@ -5,10 +5,12 @@ import {
   addWord,
   createDomain,
   customDomains,
+  isSiteOn,
   pausedSites,
   removeSite,
   removeWord,
   selectedDomain,
+  setSiteOn,
   setSitePaused,
   sites,
 } from './popup-settings';
@@ -31,6 +33,13 @@ describe('createDomain', () => {
   it('trims spaces around the name', async () => {
     await createDomain('  ivan-personal ');
     expect(await customDomains.getValue()).toEqual({ 'ivan-personal': [] });
+  });
+
+  it('refuses the names of the built-in Domains, in any case', async () => {
+    for (const name of ['Education', 'courts', 'INDUSTRIAL', 'Religious']) {
+      expect(await createDomain(name)).toBe(false);
+    }
+    expect(await customDomains.getValue()).toEqual({});
   });
 
   it('says it created the Domain', async () => {
@@ -94,6 +103,14 @@ describe('sites', () => {
     expect(await sites.getValue()).toEqual(['*']);
   });
 
+  it('keeps only the site name of an address, like the tab’s hostname', async () => {
+    await sites.setValue([]);
+    await addSite('https://chatgpt.com');
+    await addSite('http://Claude.ai/new?model=x');
+    await addSite('https://chatgpt.com/c/123');
+    expect(await sites.getValue()).toEqual(['chatgpt.com', 'claude.ai']);
+  });
+
   it('removes a site', async () => {
     await sites.setValue(['*', 'claude.ai']);
     await removeSite('*');
@@ -116,5 +133,46 @@ describe('setSitePaused', () => {
     await pausedSites.setValue(['chatgpt.com', 'claude.ai']);
     await setSitePaused('chatgpt.com', false);
     expect(await pausedSites.getValue()).toEqual(['claude.ai']);
+  });
+});
+
+describe('isSiteOn', () => {
+  it('is on for a site covered by * or listed by name, unless it is switched off', () => {
+    expect(isSiteOn('chatgpt.com', ['*'], [])).toBe(true);
+    expect(isSiteOn('claude.ai', ['claude.ai'], [])).toBe(true);
+    expect(isSiteOn('chatgpt.com', ['claude.ai'], [])).toBe(false);
+    expect(isSiteOn('chatgpt.com', ['*'], ['chatgpt.com'])).toBe(false);
+  });
+
+  it('is off everywhere when the Sites list is empty', () => {
+    expect(isSiteOn('chatgpt.com', [], [])).toBe(false);
+  });
+});
+
+describe('setSiteOn', () => {
+  it('switches off a site covered by * by putting it on the Off list', async () => {
+    await setSiteOn('chatgpt.com', false);
+    expect(await sites.getValue()).toEqual(['*']);
+    expect(await pausedSites.getValue()).toEqual(['chatgpt.com']);
+  });
+
+  it('switches off a site listed by name by removing it from Sites', async () => {
+    await sites.setValue(['claude.ai']);
+    await setSiteOn('claude.ai', false);
+    expect(await sites.getValue()).toEqual([]);
+    expect(await pausedSites.getValue()).toEqual([]);
+  });
+
+  it('switches on a site on the Off list by taking it off that list', async () => {
+    await pausedSites.setValue(['chatgpt.com', 'claude.ai']);
+    await setSiteOn('chatgpt.com', true);
+    expect(await sites.getValue()).toEqual(['*']);
+    expect(await pausedSites.getValue()).toEqual(['claude.ai']);
+  });
+
+  it('switches on a site nothing covers by adding it to Sites', async () => {
+    await sites.setValue([]);
+    await setSiteOn('chatgpt.com', true);
+    expect(await sites.getValue()).toEqual(['chatgpt.com']);
   });
 });

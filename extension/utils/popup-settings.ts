@@ -1,6 +1,49 @@
-export const BUILT_IN_DOMAINS = ['free', 'health'] as const;
+export const BUILT_IN_DOMAINS = [
+  'free',
+  'health',
+  'education',
+  'courts',
+  'industrial',
+  'religious',
+] as const;
 
-/** The Domain the Engine should use. `free` and `health` are built in; any other name is one of the user's own Domains. */
+export type BuiltInDomain = (typeof BUILT_IN_DOMAINS)[number];
+
+/** What the popup shows for each built-in Domain. Word counts match the Engine's keyword lists. */
+export const BUILT_IN_DOMAIN_INFO: Record<BuiltInDomain, { label: string; about: string }> = {
+  free: { label: 'Free', about: 'Base checks only: fnr, card, email, phone, names.' },
+  health: {
+    label: 'Health',
+    about:
+      '234 health words in Bokmål and English: diagnoses, medicines, and terms like innlagt and sykemeldt.',
+  },
+  education: {
+    label: 'Education',
+    about:
+      '64 student words in Bokmål and English: special needs, absence, discipline and grades, like IOP and fravær.',
+  },
+  courts: {
+    label: 'Courts',
+    about:
+      '44 court words in Bokmål and English: closed hearings, draft decisions and sensitive case types, like lukkede dører and barnevern.',
+  },
+  industrial: {
+    label: 'Industrial',
+    about:
+      '64 plant words in Bokmål and English: machine makers, machine park, lines and capacity, like Fanuc and produksjonslinje.',
+  },
+  religious: {
+    label: 'Religious',
+    about:
+      '51 parish words in Bokmål and English: membership, pastoral care and ceremonies, like menighet and sjelesorg.',
+  },
+};
+
+export function isBuiltInDomain(domain: string): domain is BuiltInDomain {
+  return (BUILT_IN_DOMAINS as readonly string[]).includes(domain);
+}
+
+/** The Domain the Engine should use. The built-in names go to the Engine as they are; any other name is one of the user's own Domains. */
 export const selectedDomain = storage.defineItem<string>('local:selectedDomain', {
   fallback: 'free',
 });
@@ -49,13 +92,25 @@ export const sites = storage.defineItem<string[]>('local:sites', {
   fallback: ['*'],
 });
 
-/** Adds a site. Empty sites and duplicates are ignored. */
+/**
+ * Adds a site by its name only, as a tab's hostname has it: `https://Claude.ai/new` → `claude.ai`.
+ * Empty sites and duplicates are ignored.
+ */
 export async function addSite(rawSite: string): Promise<void> {
-  const site = rawSite.trim();
+  const site = siteName(rawSite.trim());
   const list = await sites.getValue();
   if (!site || list.includes(site)) return;
 
   await sites.setValue([...list, site]);
+}
+
+function siteName(site: string): string {
+  if (!site || site === '*') return site;
+  try {
+    return new URL(site.includes('://') ? site : `https://${site}`).hostname;
+  } catch {
+    return site;
+  }
 }
 
 export async function removeSite(site: string): Promise<void> {
@@ -67,7 +122,27 @@ export const pausedSites = storage.defineItem<string[]>('local:pausedSites', {
   fallback: [],
 });
 
+/** Ghost Agent checks a site covered by `*` or listed by name, unless it was switched off there. */
+export function isSiteOn(hostname: string, siteList: string[], paused: string[]): boolean {
+  return !paused.includes(hostname) && (siteList.includes('*') || siteList.includes(hostname));
+}
+
 export async function setSitePaused(hostname: string, paused: boolean): Promise<void> {
   const others = (await pausedSites.getValue()).filter((h) => h !== hostname);
   await pausedSites.setValue(paused ? [...others, hostname] : others);
+}
+
+/**
+ * The popup switch. Off: the site leaves Sites, and if `*` still covers it, it goes on the Off list.
+ * On: the site leaves the Off list, and joins Sites if nothing there covers it.
+ */
+export async function setSiteOn(hostname: string, on: boolean): Promise<void> {
+  const list = await sites.getValue();
+  if (on) {
+    await setSitePaused(hostname, false);
+    if (!isSiteOn(hostname, list, [])) await addSite(hostname);
+  } else {
+    await removeSite(hostname);
+    if (list.includes('*')) await setSitePaused(hostname, true);
+  }
 }

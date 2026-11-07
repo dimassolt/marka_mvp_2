@@ -4,10 +4,14 @@ from collections.abc import Callable, Sequence
 from dataclasses import replace
 
 from ghost_engine.detectors.base_regex import BaseRegexDetector
+from ghost_engine.detectors.courts import courts_detector
+from ghost_engine.detectors.education import education_detector
 from ghost_engine.detectors.first_names import first_name_detector
 from ghost_engine.detectors.gliner import gliner_detector
 from ghost_engine.detectors.health import health_detector
+from ghost_engine.detectors.industrial import industrial_detector
 from ghost_engine.detectors.keywords import KeywordDetector
+from ghost_engine.detectors.religious import religious_detector
 from ghost_engine.findings import Finding, resolve_overlaps
 from ghost_engine.offsets import Utf16Offsets
 from ghost_engine.ports import Detector
@@ -24,6 +28,10 @@ BASE_DETECTORS: tuple[Detector, ...] = (
 DOMAIN_DETECTORS: dict[str, Callable[[], Sequence[Detector]]] = {
     "free": lambda: (),  # Base Findings only
     "health": lambda: (health_detector(),),
+    "education": lambda: (education_detector(),),
+    "courts": lambda: (courts_detector(),),
+    "industrial": lambda: (industrial_detector(),),
+    "religious": lambda: (religious_detector(),),
 }
 
 

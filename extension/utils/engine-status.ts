@@ -5,9 +5,9 @@ export const ENGINE_URL = 'http://127.0.0.1:8765';
 
 const ICON_SIZES = [16, 32, 48, 96, 128] as const;
 
-/** Toolbar icon paths: the ghost wears sunglasses only while the Engine is running. */
-export function iconPathsFor(running: boolean): Record<number, string> {
-  const folder = running ? 'active' : 'inactive';
+/** Toolbar icon paths: the ghost wears sunglasses only while it checks the tab's site. */
+export function iconPathsFor(on: boolean): Record<number, string> {
+  const folder = on ? 'active' : 'inactive';
   return Object.fromEntries(ICON_SIZES.map((size) => [size, `/icon/${folder}/${size}.png`]));
 }
 

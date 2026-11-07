@@ -4,12 +4,17 @@ import { checkEngine, engineRunning } from '@/utils/engine-status';
 import {
   addSite,
   addWord,
+  BUILT_IN_DOMAIN_INFO,
+  BUILT_IN_DOMAINS,
   createDomain,
   customDomains,
+  isBuiltInDomain,
+  isSiteOn,
   pausedSites,
   removeSite,
   removeWord,
   selectedDomain,
+  setSiteOn,
   setSitePaused,
   sites,
 } from '@/utils/popup-settings';
@@ -59,11 +64,12 @@ export function App() {
   return <Main onNewDomain={() => setView('new-domain')} onSettings={() => setView('settings')} />;
 }
 
-function Header({ running }: { running: boolean }) {
+/** The ghost wears sunglasses while it checks this site; the chip shows the Engine. */
+function Header({ running, on = running }: { running: boolean; on?: boolean }) {
   return (
     <header class="header">
       <img
-        src={running ? '/icon/active/128.png' : '/icon/inactive/128.png'}
+        src={on ? '/icon/active/128.png' : '/icon/inactive/128.png'}
         width={28}
         height={28}
         alt=""
@@ -91,14 +97,15 @@ function SubHeader({ title, onBack }: { title: string; onBack: () => void }) {
 function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings: () => void }) {
   const domain = useItem(selectedDomain) ?? 'free';
   const domains = useItem(customDomains) ?? {};
+  const siteList = useItem(sites) ?? [];
   const paused = useItem(pausedSites) ?? [];
   const host = useHostname();
-  const on = !paused.includes(host);
+  const on = isSiteOn(host, siteList, paused);
   const words = domains[domain];
 
   return (
     <main class="popup">
-      <Header running />
+      <Header running on={on} />
 
       <div class="site">
         <span class="site__text">
@@ -112,7 +119,7 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
           aria-checked={on}
           aria-label={`On for ${host}`}
           disabled={!host}
-          onClick={() => setSitePaused(host, on)}
+          onClick={() => setSiteOn(host, !on)}
         >
           <span class="switch__knob" />
         </button>
@@ -127,9 +134,12 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
       </div>
 
       <div class="stack">
-        <label for="domain" class="label">
-          Domain
-        </label>
+        <div class="label-row">
+          <label for="domain" class="label">
+            Domain
+          </label>
+          <DomainInfo domain={domain} own={!!words} />
+        </div>
         <div class="row">
           <select
             id="domain"
@@ -137,8 +147,11 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
             value={domain}
             onChange={(e) => selectedDomain.setValue(e.currentTarget.value)}
           >
-            <option value="free">Free</option>
-            <option value="health">Health</option>
+            {BUILT_IN_DOMAINS.map((name) => (
+              <option key={name} value={name}>
+                {BUILT_IN_DOMAIN_INFO[name].label}
+              </option>
+            ))}
             {Object.keys(domains).map((name) => (
               <option key={name} value={name}>
                 {name}
@@ -168,6 +181,8 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
 
 function Words({ domain, words }: { domain: string; words: string[] }) {
   const [word, setWord] = useState('');
+  const [query, setQuery] = useState('');
+  const shown = words.filter((w) => w.toLowerCase().includes(query.trim().toLowerCase()));
 
   const submit = async (e: Event) => {
     e.preventDefault();
@@ -182,10 +197,23 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
         <span class="hint">On this computer</span>
       </div>
       {words.length > 0 && (
+        <input
+          type="search"
+          class="input input--search"
+          aria-label={`Search ${domain} words`}
+          placeholder="Search your words"
+          value={query}
+          onInput={(e) => setQuery(e.currentTarget.value)}
+        />
+      )}
+      {words.length > 0 && shown.length === 0 && <p class="hint">No words match.</p>}
+      {shown.length > 0 && (
         <ul class="chips">
-          {words.map((w) => (
+          {shown.map((w) => (
             <li key={w} class="word">
-              {w}
+              <span class="word__text" title={w}>
+                {w}
+              </span>
               <button
                 type="button"
                 class="word__remove"
@@ -213,32 +241,50 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
           Add
         </button>
       </form>
-      <p class="hint">Plus the Base checks: fnr, card, email, phone, names.</p>
     </section>
   );
 }
 
 function BuiltIn({ domain }: { domain: string }) {
-  const health = domain === 'health';
+  const name = isBuiltInDomain(domain) ? domain : 'free';
+  const { label, about } = BUILT_IN_DOMAIN_INFO[name];
+  const free = name === 'free';
   return (
     <section class="section">
       <div class="heading-row">
-        <h2 class={health ? 'heading heading--domain' : 'heading'}>{health ? 'Health' : 'Free'}</h2>
+        <h2 class={free ? 'heading' : 'heading heading--domain'}>{label}</h2>
         <span class="pill">Built-in</span>
       </div>
-      {health ? (
-        <>
-          <p class="body">
-            234 health words in Bokmål and English: diagnoses, medicines, and terms like innlagt and
-            sykemeldt.
-          </p>
-          <p class="hint">Plus the Base checks: fnr, card, email, phone, names.</p>
-        </>
-      ) : (
-        <p class="body">Base checks only: fnr, card, email, phone, names.</p>
-      )}
+      <p class="body">{about}</p>
+      {!free && <p class="hint">Plus the Base checks: fnr, card, email, phone, names.</p>}
       <p class="hint">Want your own words? Make a Domain with the plus button.</p>
     </section>
+  );
+}
+
+/** A "?" by the Domain label; hover or focus shows what the selected Domain checks. */
+function DomainInfo({ domain, own }: { domain: string; own: boolean }) {
+  return (
+    <span class="info">
+      <button
+        type="button"
+        class="info__btn"
+        aria-label="About this Domain"
+        aria-describedby="domain-info"
+      >
+        <Icon size={15}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </Icon>
+      </button>
+      <span role="tooltip" id="domain-info" class="info__tip">
+        {domain === 'free'
+          ? 'Base checks only: fnr, card, email, phone, names.'
+          : 'Plus the Base checks: fnr, card, email, phone, names.'}
+        {!own && <span class="info__line">Want your own words? Make a Domain with the + button.</span>}
+      </span>
+    </span>
   );
 }
 
@@ -296,6 +342,7 @@ function NewDomain({ onBack }: { onBack: () => void }) {
 
 function Settings({ onBack }: { onBack: () => void }) {
   const list = useItem(sites) ?? [];
+  const paused = useItem(pausedSites) ?? [];
   const [site, setSite] = useState('');
 
   const submit = async (e: Event) => {
@@ -352,6 +399,32 @@ function Settings({ onBack }: { onBack: () => void }) {
           </button>
         </form>
       </section>
+      {paused.length > 0 && (
+        <section class="section">
+          <div class="sites-head">
+            <h2 class="heading">Off on</h2>
+            <p class="hint">Switched off in the popup, even though * covers them.</p>
+          </div>
+          <ul class="sites">
+            {paused.map((s) => (
+              <li key={s} class="site-item">
+                <span>{s}</span>
+                <button
+                  type="button"
+                  class="bare-btn bare-btn--muted"
+                  aria-label={`Remove ${s} from Off on`}
+                  onClick={() => setSitePaused(s, false)}
+                >
+                  <Icon size={14} stroke={2.25}>
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </Icon>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }
