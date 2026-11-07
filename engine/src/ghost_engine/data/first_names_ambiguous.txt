@@ -1,0 +1,76 @@
+# First names that are also everyday Bokmål or English words.
+# They are not found at the start of a sentence, where every word is capitalised
+# ("Per dag tar hun ..."), but are found inside a sentence ("Jeg ringte Dag").
+# Every entry must also be in first_names.txt.
+
+## Bokmål words
+Ane
+Birk
+Bjørn
+Bo
+Bror
+Dag
+Edel
+Eik
+Falk
+Frid
+Fred
+Gard
+Gro
+Gry
+Hans
+Hauk
+Iris
+Jo
+Juni
+Lene
+Lerke
+Lilje
+Lin
+Line
+Liv
+Lykke
+Mai
+Odd
+Per
+Ravn
+Rosa
+Rose
+Rune
+Saga
+Sander
+Signe
+Siv
+Sol
+Stein
+Sten
+Stig
+Storm
+Tale
+Tea
+Tom
+Tone
+Unn
+Varg
+Vida
+Vilje
+Vår
+
+## English words
+Angel
+Are
+Ask
+Bent
+Else
+Even
+Frank
+Glen
+Grace
+Kai
+Live
+Lone
+Mark
+Max
+Roar
+Said
+Tore

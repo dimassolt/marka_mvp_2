@@ -1,0 +1,9 @@
+# First names that are almost never names when capitalised in a chat text:
+# English months and short English words. They are never found.
+# Every entry must also be in first_names.txt.
+August
+June
+Ma
+May
+My
+Van
