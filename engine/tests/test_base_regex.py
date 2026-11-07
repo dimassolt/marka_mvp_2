@@ -186,3 +186,35 @@ def test_phone_number_is_found(phone: str) -> None:
 )
 def test_phone_lookalikes_are_not_found(text: str) -> None:
     assert found(text) == []
+
+
+# context words -----------------------------------------------------------------
+# 01019000083 passes both the fødselsnummer and the account checksum.
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["kontonummer 01019000083", "Bankkonto: 01019000083", "my account number is 01019000083"],
+)
+def test_account_context_makes_an_ambiguous_number_a_bank_account(text: str) -> None:
+    assert found(text) == [("bank_account", "01019000083")]
+
+
+def test_ambiguous_number_without_context_is_a_fodselsnummer_with_lower_confidence() -> None:
+    [finding] = BaseRegexDetector().detect("01019000083")
+
+    assert (finding.category, finding.confidence) == ("fodselsnummer", 0.92)
+
+
+def test_fodselsnummer_context_wins_when_both_contexts_are_near() -> None:
+    assert found("konto og fødselsnummer: 01019000083") == [("fodselsnummer", "01019000083")]
+
+
+def test_context_word_far_before_the_number_is_ignored() -> None:
+    text = "Kontonummer kommer senere. Her er bare et tall fra skjemaet: 01019000083"
+
+    assert found(text) == [("fodselsnummer", "01019000083")]
+
+
+def test_context_word_must_be_a_whole_word() -> None:
+    assert found("ved kontoret 01019000083") == [("fodselsnummer", "01019000083")]

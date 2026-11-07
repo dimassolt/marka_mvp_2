@@ -19,6 +19,32 @@ class _Rule:
     group: int = 0
     shrink: bool = False
     """If the whole match is rejected, retry shorter prefixes ending on a word."""
+    context: re.Pattern[str] | None = None
+    """Words that, shortly before the match, raise its confidence by CONTEXT_BOOST."""
+
+
+CONTEXT_WINDOW = 40
+"""How many characters before a match are searched for context words."""
+CONTEXT_BOOST = 0.07
+
+
+def _context_words(*words: str) -> re.Pattern[str]:
+    alternatives = "|".join(re.escape(w) for w in sorted(words, key=len, reverse=True))
+    return re.compile(rf"(?<!\w)(?:{alternatives})(?!\w)", re.IGNORECASE)
+
+
+# A plain 11-digit number can pass both the fødselsnummer and the account
+# checksum. Without context the fødselsnummer wins (0.92 > 0.90); account words
+# nearby lift the account to 0.97; fødselsnummer words lift it to 0.99.
+_NATIONAL_ID_CONTEXT = _context_words(
+    "fnr", "fødselsnummer", "fødselsnummeret", "fødselsnr", "personnummer",
+    "personnummeret", "personnr", "pnr", "d-nummer", "d-nr", "dnr", "id-nummer",
+    "ssn", "national id", "national identity number",
+)  # fmt: skip
+_ACCOUNT_CONTEXT = _context_words(
+    "konto", "kontoen", "kontonr", "kontonummer", "kontonummeret", "bankkonto",
+    "bankkontoen", "account", "acct", "bank account",
+)  # fmt: skip
 
 
 def _digits(text: str) -> str:
@@ -87,13 +113,15 @@ _RULES: tuple[_Rule, ...] = (
     _Rule(
         pattern=re.compile(r"(?<!\w)\d{6} ?\d{5}(?!\w)"),
         classify=_national_id,
-        confidence=0.99,
+        confidence=0.92,
+        context=_NATIONAL_ID_CONTEXT,
     ),
     _Rule(
         # 4.2.5 digits; the separator, if any, must be the same both times.
         pattern=re.compile(r"(?<!\w)\d{4}([. ]?)\d{2}\1\d{5}(?!\w)"),
         classify=_bank_account,
         confidence=0.9,
+        context=_ACCOUNT_CONTEXT,
     ),
     _Rule(
         # 13–19 digits, optionally grouped by single spaces or dashes.
@@ -127,10 +155,20 @@ class BaseRegexDetector:
                 accepted = self._accept(rule, text[start:end])
                 if accepted is not None:
                     category, length = accepted
-                    findings.append(Finding(start, start + length, category, rule.confidence))
+                    confidence = round(rule.confidence + self._boost(rule, text, start), 2)
+                    findings.append(Finding(start, start + length, category, confidence))
         # A valid fødselsnummer is also a valid account number; the overlap rule
         # keeps the higher-confidence one.
         return resolve_overlaps(findings)
+
+    @staticmethod
+    def _boost(rule: _Rule, text: str, start: int) -> float:
+        if rule.context is None:
+            return 0.0
+        window_start = max(0, start - CONTEXT_WINDOW)
+        if rule.context.search(text, window_start, start):
+            return CONTEXT_BOOST
+        return 0.0
 
     @staticmethod
     def _accept(rule: _Rule, candidate: str) -> tuple[str, int] | None:
