@@ -4,8 +4,11 @@ import { checkEngine, engineRunning } from '@/utils/engine-status';
 import {
   addSite,
   addWord,
+  BUILT_IN_DOMAIN_INFO,
+  BUILT_IN_DOMAINS,
   createDomain,
   customDomains,
+  isBuiltInDomain,
   pausedSites,
   removeSite,
   removeWord,
@@ -137,8 +140,11 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
             value={domain}
             onChange={(e) => selectedDomain.setValue(e.currentTarget.value)}
           >
-            <option value="free">Free</option>
-            <option value="health">Health</option>
+            {BUILT_IN_DOMAINS.map((name) => (
+              <option key={name} value={name}>
+                {BUILT_IN_DOMAIN_INFO[name].label}
+              </option>
+            ))}
             {Object.keys(domains).map((name) => (
               <option key={name} value={name}>
                 {name}
@@ -219,24 +225,17 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
 }
 
 function BuiltIn({ domain }: { domain: string }) {
-  const health = domain === 'health';
+  const name = isBuiltInDomain(domain) ? domain : 'free';
+  const { label, about } = BUILT_IN_DOMAIN_INFO[name];
+  const free = name === 'free';
   return (
     <section class="section">
       <div class="heading-row">
-        <h2 class={health ? 'heading heading--domain' : 'heading'}>{health ? 'Health' : 'Free'}</h2>
+        <h2 class={free ? 'heading' : 'heading heading--domain'}>{label}</h2>
         <span class="pill">Built-in</span>
       </div>
-      {health ? (
-        <>
-          <p class="body">
-            234 health words in Bokmål and English: diagnoses, medicines, and terms like innlagt and
-            sykemeldt.
-          </p>
-          <p class="hint">Plus the Base checks: fnr, card, email, phone, names.</p>
-        </>
-      ) : (
-        <p class="body">Base checks only: fnr, card, email, phone, names.</p>
-      )}
+      <p class="body">{about}</p>
+      {!free && <p class="hint">Plus the Base checks: fnr, card, email, phone, names.</p>}
       <p class="hint">Want your own words? Make a Domain with the plus button.</p>
     </section>
   );

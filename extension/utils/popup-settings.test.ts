@@ -33,6 +33,13 @@ describe('createDomain', () => {
     expect(await customDomains.getValue()).toEqual({ 'ivan-personal': [] });
   });
 
+  it('refuses the names of the built-in Domains, in any case', async () => {
+    for (const name of ['Education', 'courts', 'INDUSTRIAL', 'Religious']) {
+      expect(await createDomain(name)).toBe(false);
+    }
+    expect(await customDomains.getValue()).toEqual({});
+  });
+
   it('says it created the Domain', async () => {
     expect(await createDomain('ivan-personal')).toBe(true);
   });
