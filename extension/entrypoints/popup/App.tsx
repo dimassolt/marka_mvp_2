@@ -131,9 +131,12 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
       </div>
 
       <div class="stack">
-        <label for="domain" class="label">
-          Domain
-        </label>
+        <div class="label-row">
+          <label for="domain" class="label">
+            Domain
+          </label>
+          <DomainInfo domain={domain} own={!!words} />
+        </div>
         <div class="row">
           <select
             id="domain"
@@ -172,6 +175,8 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
 
 function Words({ domain, words }: { domain: string; words: string[] }) {
   const [word, setWord] = useState('');
+  const [query, setQuery] = useState('');
+  const shown = words.filter((w) => w.toLowerCase().includes(query.trim().toLowerCase()));
 
   const submit = async (e: Event) => {
     e.preventDefault();
@@ -186,10 +191,23 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
         <span class="hint">On this computer</span>
       </div>
       {words.length > 0 && (
+        <input
+          type="search"
+          class="input input--search"
+          aria-label={`Search ${domain} words`}
+          placeholder="Search your words"
+          value={query}
+          onInput={(e) => setQuery(e.currentTarget.value)}
+        />
+      )}
+      {words.length > 0 && shown.length === 0 && <p class="hint">No words match.</p>}
+      {shown.length > 0 && (
         <ul class="chips">
-          {words.map((w) => (
+          {shown.map((w) => (
             <li key={w} class="word">
-              {w}
+              <span class="word__text" title={w}>
+                {w}
+              </span>
               <button
                 type="button"
                 class="word__remove"
@@ -217,7 +235,6 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
           Add
         </button>
       </form>
-      <p class="hint">Plus the Base checks: fnr, card, email, phone, names.</p>
     </section>
   );
 }
@@ -230,19 +247,39 @@ function BuiltIn({ domain }: { domain: string }) {
         <h2 class={health ? 'heading heading--domain' : 'heading'}>{health ? 'Health' : 'Free'}</h2>
         <span class="pill">Built-in</span>
       </div>
-      {health ? (
-        <>
-          <p class="body">
-            234 health words in Bokmål and English: diagnoses, medicines, and terms like innlagt and
-            sykemeldt.
-          </p>
-          <p class="hint">Plus the Base checks: fnr, card, email, phone, names.</p>
-        </>
-      ) : (
-        <p class="body">Base checks only: fnr, card, email, phone, names.</p>
+      {health && (
+        <p class="body">
+          234 health words in Bokmål and English: diagnoses, medicines, and terms like innlagt and
+          sykemeldt.
+        </p>
       )}
-      <p class="hint">Want your own words? Make a Domain with the plus button.</p>
     </section>
+  );
+}
+
+/** A "?" by the Domain label; hover or focus shows what the selected Domain checks. */
+function DomainInfo({ domain, own }: { domain: string; own: boolean }) {
+  return (
+    <span class="info">
+      <button
+        type="button"
+        class="info__btn"
+        aria-label="About this Domain"
+        aria-describedby="domain-info"
+      >
+        <Icon size={15}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </Icon>
+      </button>
+      <span role="tooltip" id="domain-info" class="info__tip">
+        {domain === 'free'
+          ? 'Base checks only: fnr, card, email, phone, names.'
+          : 'Plus the Base checks: fnr, card, email, phone, names.'}
+        {!own && <span class="info__line">Want your own words? Make a Domain with the + button.</span>}
+      </span>
+    </span>
   );
 }
 
