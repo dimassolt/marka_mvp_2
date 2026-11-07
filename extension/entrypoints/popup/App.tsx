@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { engineRunning } from '@/utils/engine-status';
+import { checkEngine, engineRunning } from '@/utils/engine-status';
 import {
   addSite,
   addWord,
@@ -46,6 +46,11 @@ export function App() {
   const running = useItem(engineRunning);
   const [view, setView] = useState<View>('main');
   const toMain = () => setView('main');
+
+  // Re-check on every popup open, so it never shows a stale "Running".
+  useEffect(() => {
+    checkEngine();
+  }, []);
 
   if (running === undefined) return null;
   if (!running) return <EngineDown />;
@@ -357,11 +362,10 @@ function EngineDown() {
       <Header running={false} />
       <div class="down">
         <h2 class="down__title">Start Ghost Agent engine</h2>
-        <p class="down__text">Nothing is checked until the engine runs. In the project folder:</p>
-        <code class="code">{'cd engine && uv run ghost-engine'}</code>
+        <p class="down__text">In the project folder, run:</p>
+        {/* Two lines, not &&: works in cmd, PowerShell and zsh alike. */}
+        <code class="code">{'cd engine\nuv run ghost-engine'}</code>
       </div>
-      <div class="tear" />
-      <p class="footnote">The site switch, your Domain and your words stay as they are.</p>
     </main>
   );
 }
