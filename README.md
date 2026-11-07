@@ -17,7 +17,17 @@ First time on a new machine, from the repo folder:
 
 The script installs uv if it is missing, the Engine's Python packages, the GLiNER model (about 600 MB, downloaded once) and the Extension's npm packages, then runs the Engine tests. It needs Node 22 or newer. On Windows it also needs Rust from [rustup.rs](https://rustup.rs), because the GLiNER runtime is built from source there.
 
-Then start both with `make start` (macOS or Linux), or `uv run ghost-engine` in `engine/` and `npm run dev` in `extension/`.
+Then start both with `make start` (macOS or Linux) or `powershell -ExecutionPolicy Bypass -File scripts\start.ps1` (Windows, which has no make). Ctrl+C stops both. Or run `uv run ghost-engine` in `engine/` and `npm run dev` in `extension/`.
+
+**Windows: fast_gliner fails to link.** Two native libraries it bundles use different C++ runtimes. `install.ps1` sets `CXXFLAGS_x86_64_pc_windows_msvc=/MD` and `CFLAGS_x86_64_pc_windows_msvc=/MD` for you. If you run `uv sync` by hand and it rebuilds fast_gliner, set them first:
+
+```powershell
+$env:CFLAGS_x86_64_pc_windows_msvc = "/MD"
+$env:CXXFLAGS_x86_64_pc_windows_msvc = "/MD"
+cd engine; uv sync
+```
+
+Everyday runs don't need them, only rebuilds.
 
 ## Problem
 
