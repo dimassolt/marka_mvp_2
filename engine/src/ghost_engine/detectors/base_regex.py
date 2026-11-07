@@ -51,6 +51,20 @@ def _iban(match: str) -> str | None:
     return "iban" if checksums.iban_valid(match) else None
 
 
+def _always(category: str) -> Classifier:
+    return lambda _match: category
+
+
+_SECRET = re.compile(
+    r"(?<![\w-])(?:"
+    r"sk-[A-Za-z0-9_-]{20,}"  # OpenAI and similar API keys
+    r"|ghp_[A-Za-z0-9]{30,}"  # GitHub personal access token
+    r"|AKIA[0-9A-Z]{16}"  # AWS access key id
+    r"|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"  # JWT
+    r")(?![\w-])"
+)
+
+
 _RULES: tuple[_Rule, ...] = (
     _Rule(
         pattern=re.compile(r"(?<!\w)\d{6} ?\d{5}(?!\w)"),
@@ -76,6 +90,7 @@ _RULES: tuple[_Rule, ...] = (
         confidence=0.95,
         shrink=True,
     ),
+    _Rule(pattern=_SECRET, classify=_always("secret"), confidence=0.95),
 )
 
 

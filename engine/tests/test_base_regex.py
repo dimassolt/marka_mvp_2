@@ -88,3 +88,22 @@ def test_iban_with_failed_mod97_is_not_found() -> None:
 
 def test_iban_does_not_swallow_a_following_capitalised_word() -> None:
     assert found("NO93 8601 1117 947 OK") == [("iban", "NO93 8601 1117 947")]
+
+
+# secret ------------------------------------------------------------------------
+# Fake tokens are built at runtime so gitleaks in CI doesn't flag this file.
+
+_OPENAI_KEY = "sk-" + "proj-" + "a1B2c3D4" * 4
+_GITHUB_TOKEN = "ghp_" + "Z9y8X7w6" * 4 + "abcd"
+_AWS_KEY_ID = "AKIA" + "IOSFODNN7" + "TESTKEY"[:7]
+_JWT = ".".join(["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiIxMjM0NSJ9", "c2lnbmF0dXJlLXRlc3Q"])
+
+
+@pytest.mark.parametrize("token", [_OPENAI_KEY, _GITHUB_TOKEN, _AWS_KEY_ID, _JWT])
+def test_secret_token_is_found(token: str) -> None:
+    assert found(f"bruk denne: {token} ok") == [("secret", token)]
+
+
+@pytest.mark.parametrize("text", ["sk-ole er gøy", "risk-free", "AKIA alone", "eyJ.only"])
+def test_secret_lookalikes_are_not_found(text: str) -> None:
+    assert found(text) == []
