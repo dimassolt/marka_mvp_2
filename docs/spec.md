@@ -50,6 +50,7 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 - Each Detector sets its own `confidence`. It is only used to break overlap ties.
 - `domain` is `"free"` or `"health"` in V1. It is optional; without it the Engine uses `"free"`. An unknown domain returns `422`.
 - The **Free** Domain finds Base Findings only. Example: `{ "text": "Kari har diabetes, fnr 01019000083" }` gives `person_name` at 0–4 and `fodselsnummer` at 23–34, but no `health`.
+- `words` is an optional list of the user's own words, in the Health keyword syntax (`word`, `word*`, `*word`, phrases), matched in any case. Each match is a Finding with Category `custom`, which the Extension draws as an unknown Category. When the user selects one of their own Domains, the Extension sends `"domain": "free"` and that Domain's words. Example: `{ "text": "Møte på Ullevål", "words": ["ullevål"] }` gives `custom` at 8–15.
 
 ### `POST /rephrase`
 
@@ -69,13 +70,14 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 
 ### Scanning
 
-- The Extension scans every editable field (`contenteditable`) on any site. V1 is tested only on chatgpt.com.
+- The Extension scans every editable field (`contenteditable` or `<textarea>`) on any site. V1 is tested only on chatgpt.com, whose input is a `<textarea>`.
 - A scan sends the whole field text to `/detect`: 300 ms after the last keystroke, or immediately on paste.
 - Only the background worker calls the Engine. Content scripts ask it via a message, because a page like chatgpt.com can't reach localhost.
 
 ### Underlines
 
 - Underlines are drawn with the CSS Custom Highlight API, as wavy lines in the Category's colour. The site's editor HTML is never changed.
+- A `<textarea>` has no text in the page to highlight, so its underlines are drawn on an overlay: an invisible copy of its text with the same font, size, padding and scroll, laid over it at the end of `<body>`. Clicks pass through the overlay to the textarea.
 - Ignored values are not underlined.
 
 ### Card
@@ -156,5 +158,4 @@ The test text for every check and for the live demo. The fødselsnummer is synth
 ## 6. Known limits
 
 - Restore changes only what is shown on screen. ChatGPT's copy button copies its saved answer, which still contains Placeholders.
-- `<textarea>` fields are not scanned in V1; they need an overlay layer (a Could item).
 - Surnames, addresses and organisations are not found until the GLiNER Detector exists.
