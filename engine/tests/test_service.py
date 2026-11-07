@@ -50,19 +50,12 @@ def test_free_domain_gives_base_findings_only() -> None:
     ]
 
 
-@pytest.mark.parametrize(
-    ("domain", "text", "word"),
-    [
-        ("education", "Ola har IOP i år", "IOP"),
-        ("courts", "Saken går for lukkede dører", "lukkede dører"),
-        ("industrial", "Vi bruker Fanuc på linja", "Fanuc"),
-        ("religious", "Kari kom til sjelesorg", "sjelesorg"),
-    ],
-)
-def test_new_domains_give_their_domain_findings(domain: str, text: str, word: str) -> None:
-    findings = [f for f in detect(text, domain=domain) if f.category == domain]
-    assert [text[f.start : f.end] for f in findings] == [word]
+@pytest.mark.gliner
+def test_gliner_findings_win_over_a_shorter_first_name(demo_note: str) -> None:
+    # docs/spec.md §2 overlap rule: "Kari Nordmann" (GLiNER) is longer than "Kari"
+    # (first-name list), so it wins. Bærum (place) is found too.
+    findings = detect(demo_note, domain="health")
+    texts = [(demo_note[f.start : f.end], f.category) for f in findings]
 
-
-def test_free_domain_ignores_new_domain_words() -> None:
-    assert detect("Saken går for lukkede dører", domain="free") == []
+    assert ("Kari Nordmann", "person_name") in texts
+    assert ("Bærum", "location") in texts

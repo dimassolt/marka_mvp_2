@@ -6,27 +6,31 @@ V1 means: the Extension in Opera on chatgpt.com, the Engine on the same Mac, and
 
 ## 1. Categories
 
-The Engine owns this table (`CATEGORIES` in `engine/src/ghost_engine/findings.py`). It sends the Placeholder prefix, the name and the group with every Finding, so the Extension knows no Category ids. The Extension only colours the groups: `id` red, `contact` amber, `domain` teal ([design.md](design.md)).
+This table is the contract between Engine and Extension. The Engine returns the `id`, and the Extension picks the colour and Placeholder prefix from it.
 
-| `id` | Kind | Placeholder | Name | Group | How it's found |
-|---|---|---|---|---|---|
-| `fodselsnummer` | Base | `FNR` | Fødselsnummer | `id` | 11 digits, optionally `6+5` with a space, mod-11 checksum valid, first digit 0–3 |
-| `d_nummer` | Base | `DNR` | D-nummer | `id` | same as above, first digit 4–7 |
-| `bank_account` | Base | `ACCOUNT` | Bank account | `id` | 11 digits, optionally `4.2.5` with dots or spaces, mod-11 checksum valid |
-| `payment_card` | Base | `CARD` | Payment card | `id` | 13–19 digits, optionally grouped by spaces or dashes, Luhn checksum valid |
-| `iban` | Base | `IBAN` | IBAN | `id` | country code + 2 check digits + account, IBAN mod-97 valid |
-| `secret` | Base | `SECRET` | Secret | `id` | tokens starting `sk-`, `ghp_`, `AKIA`, or a JWT (`eyJ…`.`…`.`…`) |
-| `password` | Base | `PASSWORD` | Password | `id` | the value after `password:`, `passord:`, `pwd:` or `pw:` (the label itself is not part of the Finding) |
-| `email` | Base | `EMAIL` | Email | `contact` | an email address |
-| `phone` | Base | `PHONE` | Phone | `contact` | Norwegian 8-digit number with optional `+47`/`0047`, or an international `+` number |
-| `person_name` | Base | `PERSON` | Name | `contact` | a capitalised word on the SSB first-name list |
-| `health` | Domain (Health) | `HEALTH` | Health | `domain` | a word or phrase on the Health keyword list (Bokmål and English): diagnoses, medicines, terms like "innlagt" and "sykemeldt" |
-| `education` | Domain (Education) | `EDUCATION` | Education | `domain` | a word or phrase on the Education keyword list (Bokmål and English): special needs, absence, discipline, grades, terms like "IOP" and "fravær" |
-| `courts` | Domain (Courts) | `COURTS` | Courts | `domain` | a word or phrase on the Courts keyword list (Bokmål and English): closed hearings, draft decisions, sensitive case types, terms like "lukkede dører" and "barnevern" |
-| `industrial` | Domain (Industrial) | `INDUSTRIAL` | Industrial | `domain` | a word or phrase on the Industrial keyword list (Bokmål and English): machine makers, machine park, lines, capacity, control systems, terms like "Fanuc" and "produksjonslinje" |
-| `religious` | Domain (Religious) | `RELIGIOUS` | Religious | `domain` | a word or phrase on the Religious keyword list (Bokmål and English): membership, pastoral care, ceremonies, terms like "menighet" and "sjelesorg" |
+| `id` | Kind | Placeholder | Colour | How it's found |
+|---|---|---|---|---|
+| `fodselsnummer` | Base | `FNR` | red | 11 digits, optionally `6+5` with a space, mod-11 checksum valid, first digit 0–3 |
+| `d_nummer` | Base | `DNR` | red | same as above, first digit 4–7 |
+| `bank_account` | Base | `ACCOUNT` | red | 11 digits, optionally `4.2.5` with dots or spaces, mod-11 checksum valid |
+| `payment_card` | Base | `CARD` | red | 13–19 digits, optionally grouped by spaces or dashes, Luhn checksum valid |
+| `iban` | Base | `IBAN` | red | country code + 2 check digits + account, IBAN mod-97 valid |
+| `secret` | Base | `SECRET` | red | tokens starting `sk-`, `ghp_`, `AKIA`, or a JWT (`eyJ…`.`…`.`…`) |
+| `password` | Base | `PASSWORD` | red | the value after `password:`, `passord:`, `pwd:` or `pw:` (the label itself is not part of the Finding) |
+| `email` | Base | `EMAIL` | orange | an email address |
+| `phone` | Base | `PHONE` | orange | Norwegian 8-digit number with optional `+47`/`0047`, or an international `+` number |
+| `person_name` | Base | `PERSON` | orange | a capitalised word on the SSB first-name list, or a person the GLiNER Detector finds (e.g. a full name) |
+| `organization` | Base | `ORG` | orange | an organisation the GLiNER Detector finds |
+| `location` | Base | `PLACE` | orange | a place the GLiNER Detector finds |
+| `health` | Domain (Health) | `HEALTH` | purple | a word or phrase on the Health keyword list (Bokmål and English): diagnoses, medicines, terms like "innlagt" and "sykemeldt" |
+| `education` | Domain (Education) | `EDUCATION` | purple | a word or phrase on the Education keyword list (Bokmål and English): special needs, absence, discipline, grades, terms like "IOP" and "fravær" |
+| `courts` | Domain (Courts) | `COURTS` | purple | a word or phrase on the Courts keyword list (Bokmål and English): closed hearings, draft decisions, sensitive case types, terms like "lukkede dører" and "barnevern" |
+| `industrial` | Domain (Industrial) | `INDUSTRIAL` | purple | a word or phrase on the Industrial keyword list (Bokmål and English): machine makers, machine park, lines, capacity, control systems, terms like "Fanuc" and "produksjonslinje" |
+| `religious` | Domain (Religious) | `RELIGIOUS` | purple | a word or phrase on the Religious keyword list (Bokmål and English): membership, pastoral care, ceremonies, terms like "menighet" and "sjelesorg" |
 
-A Category missing from the table, and the user's own words (`custom`), get the prefix `DATA` and group `domain`; their names are "Sensitive data" and "Your word". A group the Extension doesn't know is drawn teal.
+A Category `id` the Extension doesn't know is drawn purple, and Hide gives it the Placeholder prefix `DATA`.
+
+The GLiNER Detector runs `onnx-community/gliner_multi-v2.1` (fp16 ONNX, through fast_gliner) on chunks of whole sentences, at most 1000 characters each. It keeps an entity only if it scores at least 0.8, contains a capital letter and isn't a pronoun (`Hun`, `henne`). Its `confidence` is 0.5, so for Findings of equal length the list and regex Detectors win. The model is loaded from `engine/models/` on the first `/detect` call; the Engine never downloads it.
 
 ## 2. Engine API
 
@@ -144,14 +148,14 @@ Every check below uses the demo note in section 5, typed or pasted into ChatGPT'
 
 | # | Given | When | Then |
 |---|---|---|---|
-| 1 | an empty ChatGPT input | the demo note is pasted | within 1 s, `01019000083` is red; `Kari`, the phone and the email are orange; `diabetes`, `sykemeldt` and `insulin` are purple; the Ghost bar shows 8 |
+| 1 | an empty ChatGPT input | the demo note is pasted | within 1 s, `01019000083` is red; `Kari Nordmann`, `Kari`, `Bærum`, the phone and the email are orange; `diabetes`, `sykemeldt` and `insulin` are purple; the Ghost bar shows 9 |
 | 2 | the note is underlined | the user hovers `01019000083` | its Card opens above it with Fødselsnummer, Hide, Rephrase, Ignore |
-| 3 | the Card is open on `01019000083` | the user clicks Hide | the field reads `fnr [FNR_1]`, the Vault holds `[FNR_1] → 01019000083`, the Ghost bar shows 7 |
-| 4 | after check 3 | the user presses Ctrl+Z | the field reads `fnr 01019000083` again, red, and the Ghost bar shows 8 |
-| 5 | the note is underlined | the user clicks Ignore on the first `Kari` | both `Kari` are no longer underlined, and the Ghost bar shows 6 |
+| 3 | the Card is open on `01019000083` | the user clicks Hide | the field reads `fnr [FNR_1]`, the Vault holds `[FNR_1] → 01019000083`, the Ghost bar shows 8 |
+| 4 | after check 3 | the user clicks Undo | the field reads `fnr 01019000083` again, red, and the Ghost bar shows 9 |
+| 5 | the note is underlined | the user clicks Ignore on `Kari` (the one after `fnr`) | that `Kari` is no longer underlined, `Kari Nordmann` still is, and the Ghost bar shows 8 |
 | 6 | the note is underlined | the user clicks Rephrase on `diabetes` | within 15 s the Card shows a Norwegian sentence without the name, age or diagnosis; Accept replaces the sentence |
-| 7 | the note is underlined | the user clicks Hide all | every underlined value is replaced, the same value with the same Placeholder (both `Kari` → `[PERSON_1]`), and the Ghost bar disappears |
-| 8 | after check 7 | the user sends, and ChatGPT answers with `[PERSON_1]` | the answer shows "Kari" with a dotted underline, and so does the user's own sent message |
+| 7 | the note is underlined | the user clicks Hide all | every underlined value is replaced, the same value with the same Placeholder (`Kari Nordmann` → `[PERSON_1]`, `Kari` → `[PERSON_2]`), and the Ghost bar disappears |
+| 8 | after check 7 | the user sends, and ChatGPT answers with `[PERSON_1]` | the answer shows "Kari Nordmann" with a dotted underline, and so does the user's own sent message |
 | 9 | the Engine is stopped | the user types in the field | nothing is underlined, the icon shows a red `!`, and the popup says "Start Ghost Agent engine" |
 | 10 | the text `ordrenummer 01019000084` (checksum fails) | it is scanned | nothing is underlined |
 
@@ -161,9 +165,9 @@ The test text for every check and for the live demo. The fødselsnummer is synth
 
 > Hei! Kan du hjelpe meg å skrive et henvisningsbrev? Pasienten heter Kari Nordmann, fnr 01019000083. Kari, 34 år, jobber som lærer i Bærum og har diabetes type 1. Hun er sykemeldt og bruker insulin. Ring henne på +47 912 34 567 eller send e-post til kari.nordmann@example.com.
 
-`Nordmann` (a surname) and `Bærum` (a place) are **not** found in V1. They need the GLiNER Detector, which is a Could item.
+`Kari Nordmann` (a full name) and `Bærum` (a place) are found by the GLiNER Detector.
 
 ## 6. Known limits
 
 - Restore changes only what is shown on screen. ChatGPT's copy button copies its saved answer, which still contains Placeholders.
-- Surnames, addresses and organisations are not found until the GLiNER Detector exists.
+- The GLiNER Detector finds most names, organisations and places, not all. A title before a name (`Dommer Ingrid Solheim`) becomes part of the Finding. Street addresses are not a Category.

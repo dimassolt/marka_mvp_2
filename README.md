@@ -8,6 +8,17 @@ Built at Oslo Sprint, 6–8 November 2026. Deadline Sunday 14:00, 2-minute pitch
 - **[GLOSSARY.md](GLOSSARY.md)**: the terms we use.
 - **[docs/adr/](docs/adr/)**: decisions and why we made them.
 
+## Setup
+
+First time on a new machine, from the repo folder:
+
+- macOS or Linux: `./scripts/install.sh`
+- Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File scripts\install.ps1`
+
+The script installs uv if it is missing, the Engine's Python packages, the GLiNER model (about 600 MB, downloaded once) and the Extension's npm packages, then runs the Engine tests. It needs Node 22 or newer. On Windows it also needs Rust from [rustup.rs](https://rustup.rs), because the GLiNER runtime is built from source there.
+
+Then start both with `make start` (macOS or Linux), or `uv run ghost-engine` in `engine/` and `npm run dev` in `extension/`.
+
 ## Problem
 
 A nurse pastes a patient note into ChatGPT to get help writing a letter. The note has the patient's name, fødselsnummer and diagnosis. That's a GDPR breach, and nothing on screen warned her.
@@ -31,7 +42,7 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
                  └──────────────┬───────────────────────────┘
                      Engine (Python, uv + FastAPI)
               ports: Detector, Rephraser   (hexagonal)
-   adapters: Regex · First-name list · Health keywords · GLiNER (later) · Qwen
+   adapters: Regex · First-name list · Health keywords · GLiNER · Qwen
 ```
 
 ## Scope

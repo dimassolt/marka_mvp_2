@@ -5,7 +5,9 @@ description = "Local detection engine for Ghost Agent"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fast-gliner>=0.4.1",
     "fastapi>=0.115",
+    "huggingface-hub>=0.36",
     "uvicorn>=0.32",
 ]
 
@@ -29,6 +31,7 @@ packages = ["src/ghost_engine"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["gliner: loads the real GLiNER model (run scripts/fetch_gliner.py first)"]
 
 [tool.ruff]
 target-version = "py312"
@@ -44,3 +47,8 @@ strict = true
 mypy_path = "src"
 explicit_package_bases = true
 exclude = ["^\\.venv/"]
+
+[[tool.mypy.overrides]]
+# fast_gliner ships no type hints; gliner.py types its use through the EntityModel port.
+module = ["fast_gliner", "fast_gliner.*"]
+ignore_missing_imports = true
