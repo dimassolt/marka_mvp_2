@@ -13,6 +13,7 @@ from ghost_engine.ports import Detector
 BASE_DETECTORS: tuple[Detector, ...] = (BaseRegexDetector(), first_name_detector())
 
 DOMAIN_DETECTORS: dict[str, Callable[[], Sequence[Detector]]] = {
+    "free": lambda: (),  # Base Findings only
     "health": lambda: (health_detector(),),
 }
 
