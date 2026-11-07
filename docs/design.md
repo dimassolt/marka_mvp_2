@@ -26,7 +26,7 @@ Type: Schibsted Grotesk 700 for headings, Instrument Sans 400/500 for everything
 
 - **Underline:** wavy, 1.5px, offset 4px, in the Category colour (CSS Custom Highlight API). Hovered: the soft tint behind it. Domain words, your own words and unknown Category ids are teal.
 - **Card:** `--color-paper-2`, radius 10, `--shadow-lift`, width 300. Top: Category name underlined in its colour, the value in DM Mono, and the cobalt stamp `hide as [FNR_1]` rotated −3°. A dashed tear-off rule (`--rule-tear`), then Hide (black), Rephrase (clear), Ignore (text). States: default, rephrasing, preview, engine down.
-- **Ghost bar:** a label tab on the field's bottom edge, left of the site's Send button: `8 to check`, count in cobalt mono, dashed cobalt left edge. Open: black tab with a menu above it (Hide all with count, Undo with the last step). Gone at 0. Not a round badge (that reads as Grammarly).
+- **Ghost bar:** a label tab on the field's bottom edge, left of the site's Send button: `8 to check`, count in cobalt mono, dashed cobalt left edge. Open: black tab with a menu above it (Hide all and Ignore all, each with the count). Gone at 0. Not a round badge (that reads as Grammarly).
 - **Placeholder:** plain text in the site's editor, `[PREFIX_n]`. We never style it in the field.
 - **Restore:** the original value with a 2px cobalt dotted underline. Hover: dark ink hint, "Shown only on your screen. The AI saw [PERSON_1]".
 - **Popup:** 330 wide. Header (ghost, name, status chip), site row (switch and settings button), Domain select with a plus for a new Domain, then your words as teal chips with Add. Views: your Domain, built-in Domain, New Domain, Settings (Sites list, `*` = all), Engine down (with `cd engine && uv run ghost-engine`).

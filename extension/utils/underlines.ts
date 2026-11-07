@@ -1,9 +1,6 @@
 /** Underline colours, named after the tokens in assets/tokens.css (`--color-cat-<colour>`). */
 export type Colour = 'id' | 'contact' | 'domain';
 
-const ID = ['fodselsnummer', 'd_nummer', 'bank_account', 'payment_card', 'iban', 'secret', 'password'];
-const CONTACT = ['email', 'phone', 'person_name'];
-
 /**
  * One piece of a field's text, in order: a text node's data, or a line break (`node: null`)
  * that the Extension adds between paragraphs. Joined, the pieces are the text sent to /detect.
@@ -28,9 +25,7 @@ export function pointAt<N>(pieces: Piece<N>[], offset: number, edge: 'start' | '
   return undefined;
 }
 
-/** The underline colour of a Category (docs/spec.md §1). Domain words, own words and unknown ids are teal. */
-export function colourOf(category: string): Colour {
-  if (ID.includes(category)) return 'id';
-  if (CONTACT.includes(category)) return 'contact';
-  return 'domain';
+/** The underline colour of a Finding's group, as the Engine sends it (docs/spec.md §1). Unknown groups are teal. */
+export function colourOf(group: string): Colour {
+  return group === 'id' || group === 'contact' ? group : 'domain';
 }

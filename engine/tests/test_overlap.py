@@ -1,4 +1,4 @@
-from ghost_engine.findings import Finding, resolve_overlaps
+from ghost_engine.findings import Finding, category_info, resolve_overlaps
 
 
 def test_longer_finding_wins_when_findings_overlap() -> None:
@@ -27,3 +27,12 @@ def test_touching_findings_do_not_overlap() -> None:
     b = Finding(start=4, end=8, category="health", confidence=0.8)
 
     assert resolve_overlaps([b, a]) == [a, b]
+
+
+def test_a_category_missing_from_the_table_hides_as_data() -> None:
+    # docs/spec.md §1: an unknown Category is teal and hides as DATA.
+    assert category_info("something_new") == {
+        "prefix": "DATA",
+        "name": "Sensitive data",
+        "group": "domain",
+    }

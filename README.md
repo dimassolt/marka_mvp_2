@@ -28,7 +28,7 @@ A nurse pastes a patient note into ChatGPT to get help writing a letter. The not
 1. The user types or pastes into an input field, and the Extension asks the local Engine for Findings.
 2. Findings are underlined: red for secrets and ID numbers, orange for contact data, purple for Domain Findings.
 3. Hovering a Finding opens its **Card**: **Hide** (replace with a Placeholder like `[PERSON_1]`), **Rephrase** (rewrite the sentence with a local LLM), **Ignore**.
-4. The **Ghost bar** in the field's corner shows the Finding count, with **Hide all** and **Undo**.
+4. The **Ghost bar** on the field's edge shows the Finding count, with **Hide all** and **Ignore all**.
 5. When the AI answers with `[PERSON_1]`, **Restore** shows "Kari" on the user's screen only.
 
 ## Architecture
@@ -50,7 +50,7 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
 **Must** (no demo without these):
 - the Base and Health Detectors, plus the overlap rule
 - underlines, the Card, the Ghost bar, also in a `<textarea>` through an overlay (ChatGPT's input is one)
-- Hide, Hide all, Ignore, Undo, the Vault
+- Hide, Hide all, Ignore, Ignore all, the Vault
 - Rephrase with Qwen
 - Restore on ChatGPT while the answer streams in
 - GLiNER Detector

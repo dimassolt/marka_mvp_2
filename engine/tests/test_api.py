@@ -17,7 +17,17 @@ def test_detect_returns_findings_in_spec_shape() -> None:
 
     assert response.status_code == 200
     assert response.json() == {
-        "findings": [{"start": 4, "end": 15, "category": "fodselsnummer", "confidence": 0.99}]
+        "findings": [
+            {
+                "start": 4,
+                "end": 15,
+                "category": "fodselsnummer",
+                "confidence": 0.99,
+                "prefix": "FNR",
+                "name": "Fødselsnummer",
+                "group": "id",
+            }
+        ]
     }
 
 
@@ -50,6 +60,13 @@ def test_words_become_custom_findings() -> None:
         ("custom", 8, 15),
         ("custom", 19, 29),
     ]
+
+
+def test_custom_findings_hide_as_data() -> None:
+    response = client.post("/detect", json={"text": "Møte på Ullevål", "words": ["ullevål"]})
+
+    finding = response.json()["findings"][0]
+    assert (finding["prefix"], finding["name"], finding["group"]) == ("DATA", "Your word", "domain")
 
 
 def test_unknown_domain_returns_422() -> None:

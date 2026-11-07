@@ -47,18 +47,22 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 ```
 ```json
 { "findings": [
-  { "start": 0,  "end": 4,  "category": "person_name",   "confidence": 0.6 },
-  { "start": 9,  "end": 17, "category": "health",        "confidence": 0.8 },
-  { "start": 23, "end": 34, "category": "fodselsnummer", "confidence": 0.99 }
+  { "start": 0,  "end": 4,  "category": "person_name",   "confidence": 0.6,
+    "prefix": "PERSON", "name": "Name", "group": "contact" },
+  { "start": 9,  "end": 17, "category": "health",        "confidence": 0.8,
+    "prefix": "HEALTH", "name": "Health", "group": "domain" },
+  { "start": 23, "end": 34, "category": "fodselsnummer", "confidence": 0.99,
+    "prefix": "FNR", "name": "Fødselsnummer", "group": "id" }
 ] }
 ```
 
 - `start` is inclusive and `end` is exclusive, both counted **in UTF-16 units, the way JavaScript counts**. Example: in `"👋 01019000083"` the fødselsnummer is at 3–14, even though Python sees it at 2–13.
 - Findings are sorted by `start` and never overlap. When two Detectors' Findings overlap, the longer one wins; for equal length, the higher `confidence` wins.
 - Each Detector sets its own `confidence`. It is only used to break overlap ties.
+- `prefix`, `name` and `group` come from the table in §1.
 - `domain` is `"free"`, `"health"`, `"education"`, `"courts"`, `"industrial"` or `"religious"`. It is optional; without it the Engine uses `"free"`. An unknown domain returns `422`.
 - The **Free** Domain finds Base Findings only. Example: `{ "text": "Kari har diabetes, fnr 01019000083" }` gives `person_name` at 0–4 and `fodselsnummer` at 23–34, but no `health`.
-- `words` is an optional list of the user's own words, in the Health keyword syntax (`word`, `word*`, `*word`, phrases), matched in any case. Each match is a Finding with Category `custom`, which the Extension draws as an unknown Category. When the user selects one of their own Domains, the Extension sends `"domain": "free"` and that Domain's words. Example: `{ "text": "Møte på Ullevål", "words": ["ullevål"] }` gives `custom` at 8–15.
+- `words` is an optional list of the user's own words, in the Health keyword syntax (`word`, `word*`, `*word`, phrases), matched in any case. Each match is a Finding with Category `custom`. When the user selects one of their own Domains, the Extension sends `"domain": "free"` and that Domain's words. Example: `{ "text": "Møte på Ullevål", "words": ["ullevål"] }` gives `custom` at 8–15.
 
 ### `POST /rephrase`
 
@@ -104,9 +108,10 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 
 ### Ghost bar
 
-- The Ghost bar is a round badge in the bottom-right corner of a field that has at least one Finding. It shows the Finding count.
-- Clicking it shows **Hide all** and **Undo**.
-- **Hide all** hides every underlined Finding in the field. It is one step for Undo.
+- The Ghost bar is a label tab on the bottom edge of the field the user last focused, while it has at least one Finding. It shows the Finding count.
+- Clicking it shows **Hide all** and **Ignore all**.
+- **Hide all** hides every underlined Finding in the field.
+- **Ignore all** ignores every underlined Finding in the field.
 
 ### Ignore
 
@@ -115,9 +120,7 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 
 ### Undo
 
-- Each field keeps a list of steps: Hide, Hide all, an accepted Rephrase.
-- Undo reverts the newest step and puts the original text back. Vault entries stay, since Restore may still need them.
-- The list is cleared when the message is sent.
+- The Extension has no Undo of its own. Hide types through the editor's insert command, so the editor's own Ctrl+Z puts the original text back. Vault entries stay, since Restore may still need them.
 
 ### Rephrase
 

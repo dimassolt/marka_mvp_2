@@ -33,12 +33,19 @@ export async function checkEngine(): Promise<void> {
   await engineRunning.setValue(running);
 }
 
-/** A stretch of sensitive text, as POST /detect returns it (docs/spec.md §2). Offsets are UTF-16 units. */
+/**
+ * A stretch of sensitive text, as POST /detect returns it (docs/spec.md §2). Offsets are UTF-16 units.
+ * The Engine owns the Categories, so it also sends the Placeholder prefix, the Card's name and the
+ * underline group.
+ */
 export interface Finding {
   start: number;
   end: number;
   category: string;
   confidence: number;
+  prefix: string;
+  name: string;
+  group: string;
 }
 
 /**
