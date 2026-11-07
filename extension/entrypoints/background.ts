@@ -1,12 +1,6 @@
 import { checkEngine, detect, iconPathsFor } from '@/utils/engine-status';
 import { placeholderFor, type Vault } from '@/utils/vault';
 
-/** A value to hide and its Placeholder prefix, as the content script sends it. */
-interface ToHide {
-  value: string;
-  prefix: string;
-}
-
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender) => {
     // Content scripts can't reach the Engine on localhost, so they ask here (docs/spec.md §3).
@@ -40,7 +34,7 @@ let queue: Promise<unknown> = Promise.resolve();
  * The Placeholder for each value, from the tab's Vault. With `save`, new ones are added to the
  * Vault; without it, the Card only shows what Hide would write.
  */
-function placeholders(tabId: number, items: ToHide[], save: boolean): Promise<string[]> {
+function placeholders(tabId: number, items: { value: string; prefix: string }[], save: boolean): Promise<string[]> {
   const run = queue.then(async () => {
     const vault: Vault = (await storage.getItem<Vault>(vaultKey(tabId))) ?? {};
     const result = items.map(({ value, prefix }) => {
