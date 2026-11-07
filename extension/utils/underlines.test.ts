@@ -34,17 +34,11 @@ describe('pointAt', () => {
 });
 
 describe('colourOf', () => {
-  it.each(['fodselsnummer', 'd_nummer', 'bank_account', 'payment_card', 'iban', 'secret', 'password'])(
-    'draws %s red (ID numbers and secrets)',
-    (category) => expect(colourOf(category)).toBe('id'),
+  it.each(['id', 'contact', 'domain'])('draws the group %s in its own colour', (group) =>
+    expect(colourOf(group)).toBe(group),
   );
 
-  it.each(['email', 'phone', 'person_name'])('draws %s amber (contact data)', (category) =>
-    expect(colourOf(category)).toBe('contact'),
-  );
-
-  it.each(['health', 'custom', 'something_new'])(
-    'draws %s teal (Domain Findings, own words, unknown ids)',
-    (category) => expect(colourOf(category)).toBe('domain'),
-  );
+  it('draws a group it does not know teal', () => {
+    expect(colourOf('something_new')).toBe('domain');
+  });
 });

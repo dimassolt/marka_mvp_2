@@ -1,4 +1,11 @@
 import { checkEngine, detect, iconPathsFor } from '@/utils/engine-status';
+import { placeholderFor, type Vault } from '@/utils/vault';
+
+/** A value to hide and its Placeholder prefix, as the content script sends it. */
+interface ToHide {
+  value: string;
+  prefix: string;
+}
 
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender) => {
@@ -8,9 +15,42 @@ export default defineBackground(() => {
     if (message?.type === 'icon' && sender.tab?.id !== undefined) {
       browser.action.setIcon({ tabId: sender.tab.id, path: iconPathsFor(message.on) });
     }
+    if (message?.type === 'placeholders' && sender.tab?.id !== undefined) {
+      return placeholders(sender.tab.id, message.items, message.save);
+    }
   });
+
+  // A closed tab's Vault is no longer needed.
+  browser.tabs.onRemoved.addListener((tabId) => storage.removeItem(vaultKey(tabId)));
 
   // Check the Engine when the extension starts and on every tab switch.
   checkEngine();
   browser.tabs.onActivated.addListener(() => checkEngine());
 });
+
+/** The tab's Vault in session storage: memory only, cleared when the browser closes (spec §3). */
+function vaultKey(tabId: number) {
+  return `session:vault-${tabId}` as const;
+}
+
+/** Hides run one at a time, so two of them never hand out the same Placeholder. */
+let queue: Promise<unknown> = Promise.resolve();
+
+/**
+ * The Placeholder for each value, from the tab's Vault. With `save`, new ones are added to the
+ * Vault; without it, the Card only shows what Hide would write.
+ */
+function placeholders(tabId: number, items: ToHide[], save: boolean): Promise<string[]> {
+  const run = queue.then(async () => {
+    const vault: Vault = (await storage.getItem<Vault>(vaultKey(tabId))) ?? {};
+    const result = items.map(({ value, prefix }) => {
+      const placeholder = placeholderFor(vault, value, prefix);
+      vault[placeholder] = value;
+      return placeholder;
+    });
+    if (save) await storage.setItem(vaultKey(tabId), vault);
+    return result;
+  });
+  queue = run.catch(() => {});
+  return run;
+}
