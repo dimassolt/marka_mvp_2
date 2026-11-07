@@ -1,5 +1,6 @@
 import tokens from '@/assets/tokens.css?raw';
 import type { Finding } from '@/utils/engine-status';
+import { customDomains, selectedDomain } from '@/utils/popup-settings';
 import { colourOf, pointAt, type Colour, type Piece } from '@/utils/underlines';
 
 /** Scan 1 s after the last keystroke (docs/spec.md §3), so typing doesn't send every word. */
@@ -128,6 +129,12 @@ export default defineContentScript({
       },
       true,
     );
+    // The user picked another Domain or changed its words: scan every field again.
+    const rescanAll = () => {
+      for (const field of underlined.keys()) schedule(field, 0);
+    };
+    selectedDomain.watch(rescanAll);
+    customDomains.watch(rescanAll);
     // The page may have focused its input before this script loaded.
     watch(fieldOf(document.activeElement));
   },
