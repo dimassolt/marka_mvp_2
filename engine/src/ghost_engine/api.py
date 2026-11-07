@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from ghost_engine import service
+from ghost_engine.findings import category_info
 
 app = FastAPI(title="Ghost Agent Engine")
 
@@ -19,6 +20,9 @@ class FindingOut(BaseModel):
     end: int
     category: str
     confidence: float
+    prefix: str
+    name: str
+    group: str
 
 
 class DetectResponse(BaseModel):
@@ -39,7 +43,13 @@ def detect(request: DetectRequest) -> DetectResponse:
         raise HTTPException(status_code=422, detail=f"unknown domain: {error}") from None
     return DetectResponse(
         findings=[
-            FindingOut(start=f.start, end=f.end, category=f.category, confidence=f.confidence)
+            FindingOut(
+                start=f.start,
+                end=f.end,
+                category=f.category,
+                confidence=f.confidence,
+                **category_info(f.category),
+            )
             for f in findings
         ]
     )
