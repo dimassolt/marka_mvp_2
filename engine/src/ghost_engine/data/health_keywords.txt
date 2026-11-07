@@ -1,0 +1,260 @@
+# Health Domain keywords, Bokmål and English (docs/spec.md §1, Category `health`).
+#
+# One entry per line. Lines starting with # are comments.
+#   word        whole word, any case
+#   word*       plus any ending (sykemeldt, sykemelding)
+#   *word       any compound ending in it (brystkreft)
+#   two words   a phrase, any whitespace between
+#
+# Keep entries specific. A stem that is too short catches everyday words:
+# "kreft*" would match "krefter", so kreft is listed by form instead.
+
+## Bokmål: diagnoses and conditions
+diabet*
+*diabetes
+kreft
+*kreft
+*kreften
+kreftsyk*
+kreftpasient*
+kreftbehandling*
+svulst*
+cellegift*
+strålebehandling*
+kjemoterapi*
+hjerteinfarkt*
+hjertesvikt*
+nyresvikt*
+leversvikt*
+hjerneslag*
+blodpropp*
+høyt blodtrykk
+hypertensjon
+kols
+astma*
+epilep*
+migrene*
+leddgikt*
+revmat*
+artritt*
+artrose*
+psoriasis
+eksem*
+cøliaki
+crohn*
+ulcerøs kolitt
+multippel sklerose
+parkinson*
+alzheimer*
+demens
+demensen
+*depresjon*
+deprimert*
+angst*
+*lidelse*
+*sykdom*
+*betennelse*
+*allergi*
+allergisk*
+spiseforstyrr*
+anoreksi*
+bulimi*
+schizofren*
+bipolar*
+psykose*
+psykotisk*
+ptsd
+adhd
+autis*
+asperger*
+hiv
+hepatitt*
+tuberkulose
+covid*
+influensa
+selvmord*
+selvskad*
+suicid*
+rusmisbruk*
+rusavhengig*
+alkoholi*
+
+## Bokmål: pregnancy
+gravid*
+svangerskap*
+spontanabort*
+p-pille*
+
+## Bokmål: care, leave and benefits
+innlagt
+innleggelse*
+sykemeld*
+sykmeld*
+legeerklæring*
+uføretrygd*
+uførepensjon*
+uføre
+diagnose
+diagnosen
+diagnoser
+diagnostiser*
+psykiater*
+psykolog
+psykologen
+psykologer
+psykoterapi*
+fastlege*
+legevakt*
+akuttmottak*
+dialyse*
+organtransplant*
+medisiner
+medisinen
+medisinering*
+resept*
+
+## Bokmål: medicines
+insulin*
+metformin*
+paracet*
+ibux
+ibuprofen*
+paralgin*
+pinex
+oxycodon*
+oxycontin
+morfin*
+sertralin*
+zoloft
+cipralex
+escitalopram*
+citalopram*
+fluoxetin*
+prozac
+antidepressiv*
+antibiotika*
+penicillin*
+metadon*
+subutex
+buprenorfin*
+valium
+vival
+diazepam*
+sobril
+oxazepam*
+imovane
+zopiklon*
+ritalin*
+metylfenidat*
+concerta
+elvanse
+levaxin
+levotyroksin*
+warfarin*
+marevan
+albyl*
+simvastatin*
+atorvastatin*
+kortison*
+prednisolon*
+ozempic
+wegovy
+semaglutid*
+antipsykotik*
+sovemedisin*
+sovepille*
+
+## English: diagnoses and conditions
+diabetic*
+cancer*
+breast cancer
+lung cancer
+prostate cancer
+skin cancer
+colon cancer
+tumor*
+tumour*
+chemotherap*
+radiotherap*
+radiation therapy
+heart attack
+heart failure
+myocardial infarction
+blood clot*
+high blood pressure
+hypertension
+copd
+asthma*
+epileps*
+epileptic
+migraine*
+rheumat*
+arthritis
+eczema
+coeliac
+celiac
+multiple sclerosis
+dementia
+depression*
+depressed
+depressive
+anxiety
+panic attack*
+eating disorder*
+anorexi*
+bulimi*
+schizophren*
+psychosis
+psychotic
+autism
+autistic
+hepatitis
+tuberculosis
+pneumonia
+influenza
+suicidal
+suicide
+self-harm
+addiction
+alcoholism
+alcoholic
+allerg*
+
+## English: pregnancy
+pregnan*
+miscarriage*
+abortion*
+
+## English: care, leave and benefits
+sick leave
+sick note
+hospitalised
+hospitalized
+hospitalisation
+hospitalization
+admitted to hospital
+diagnosed
+diagnosis
+diagnoses
+psychiatr*
+psychologist*
+psychotherap*
+dialysis
+prescription*
+prescribed
+
+## English: medicines
+paracetamol
+morphine
+sertraline
+fluoxetine
+antidepressant*
+antibiotic*
+methadone
+buprenorphine
+zopiclone
+methylphenidate
+levothyroxine
+prednisone
+antipsychotic*
+sleeping pill*
