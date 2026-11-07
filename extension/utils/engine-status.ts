@@ -43,9 +43,10 @@ export interface Finding {
   end: number;
   category: string;
   confidence: number;
-  prefix: string;
-  name: string;
-  group: string;
+  // An Engine older than the Extension leaves these out (docs/spec.md §1: unknown → DATA).
+  prefix?: string;
+  name?: string;
+  group?: string;
 }
 
 /**

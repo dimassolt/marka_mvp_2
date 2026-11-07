@@ -122,7 +122,7 @@ export default defineContentScript({
 
       underlined.set(
         field,
-        findings.flatMap(({ start, end, category, prefix, name, group }) => {
+        findings.flatMap(({ start, end, category, prefix = 'DATA', name = category, group }) => {
           const value = text.slice(start, end);
           if (ignored.get(field)?.has(ignoreKey(category, value))) return [];
           const range = rangeOf(pieces, start, end);
