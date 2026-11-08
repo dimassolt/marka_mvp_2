@@ -88,3 +88,37 @@ def test_status_counts_the_megabytes_on_disk_while_downloading(tmp_path: Path) -
     (tmp_path / "model" / "config.json").write_bytes(b"0" * 600_000)
 
     assert model.status().downloaded_mb == 3
+
+
+def test_a_finished_download_calls_on_ready_once_the_status_is_ready(tmp_path: Path) -> None:
+    # The rephrase model loads as soon as it is on disk (docs/spec.md §2, GET /rephrase/model).
+    seen: list[str] = []
+    model = ModelDownload(
+        write_model,
+        tmp_path / "model",
+        MODEL_FILE,
+        run=lambda job: job(),
+        on_ready=lambda: seen.append(model.status().state),
+    )
+
+    model.start()
+
+    assert seen == ["ready"]
+
+
+def test_a_failed_download_does_not_call_on_ready(tmp_path: Path) -> None:
+    def fail(target: Path) -> None:
+        raise OSError("no network")
+
+    seen: list[str] = []
+    model = ModelDownload(
+        fail,
+        tmp_path / "model",
+        MODEL_FILE,
+        run=lambda job: job(),
+        on_ready=lambda: seen.append("x"),
+    )
+
+    model.start()
+
+    assert seen == []

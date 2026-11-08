@@ -1,7 +1,8 @@
 import tokens from '@/assets/tokens.css?raw';
 import { engineRunning, type Finding, type RephraseFailure, type RephraseResult } from '@/utils/engine-status';
 import { customDomains, isSiteOn, pausedSites, selectedDomain, sites } from '@/utils/popup-settings';
-import { sentenceAround } from '@/utils/sentence';
+import { outsideRephrased } from '@/utils/rephrased';
+import { fitRewrite, sentenceAround } from '@/utils/sentence';
 import { colourOf, movedStart, pointAt, type Colour, type Piece } from '@/utils/underlines';
 
 /** Scan 1 s after the last keystroke (docs/spec.md §3), so typing doesn't send every word. */
@@ -29,7 +30,7 @@ const CARD_WIDTH_PX = 300;
 /** What the Card says when there is no rephrased sentence (docs/spec.md §3, Engine down). */
 const REPHRASE_FAILURES: Record<RephraseFailure, string> = {
   'engine-down': 'Engine not running',
-  'model-missing': "Rephrase model isn't ready. See Settings in the popup.",
+  'model-missing': 'Rephrase needs Gemma 4. Download it in the popup, under Models.',
   unsafe: "Couldn't rephrase without sensitive data. Use Hide.",
   timeout: 'Rephrasing took too long. Try again.',
   failed: "Couldn't rephrase. Try again.",
@@ -69,6 +70,9 @@ export default defineContentScript({
     const texts = new WeakMap<HTMLElement, string>();
     // Ignored (Category, value) pairs per field, until the message is sent (spec §3, Ignore).
     const ignored = new WeakMap<HTMLElement, Set<string>>();
+    // Accepted rewrites per field, until the message is sent: the Engine checked them, so a
+    // scan doesn't flag their general words again (spec §3, Rephrase).
+    const rephrased = new WeakMap<HTMLElement, Set<string>>();
     // Off until the site settings are read, so no text reaches the Engine on a site switched off.
     let siteOn = false;
     // The field the user last focused: the Ghost bar shows its Findings.
@@ -83,7 +87,10 @@ export default defineContentScript({
     // Checked on every change, since typing the next message may start before the scan runs.
     const changed = (field: HTMLElement) => {
       const text = joined(piecesOf(field));
-      if (!text.trim()) ignored.delete(field);
+      if (!text.trim()) {
+        ignored.delete(field);
+        rephrased.delete(field);
+      }
       move(field, text);
       schedule(field, TYPING_PAUSE_MS);
     };
@@ -158,11 +165,12 @@ export default defineContentScript({
     async function scan(field: HTMLElement) {
       const pieces = piecesOf(field);
       const text = joined(pieces);
-      const findings: Finding[] = siteOn && text.trim()
+      const detected: Finding[] = siteOn && text.trim()
         ? await browser.runtime.sendMessage({ type: 'detect', text }).catch(() => [])
         : [];
       // The user typed while the Engine answered: these offsets are stale. Scan again.
       if (joined(piecesOf(field)) !== text) return schedule(field, TYPING_PAUSE_MS);
+      const findings = outsideRephrased(detected, text, rephrased.get(field) ?? []);
 
       texts.set(field, text);
       underlined.set(
@@ -273,11 +281,12 @@ export default defineContentScript({
       // rebuilt but not reloaded), or the extension was reloaded under this tab.
       if (!result) return ui.showRephraseFailure(STALE_EXTENSION);
       if (!result.ok) return ui.showRephraseFailure(REPHRASE_FAILURES[result.reason]);
-      rephrasing.text = result.text;
-      ui.showPreview(result.text);
+      // A long sentence is sent as the clauses around the Finding; the rewrite goes back mid-sentence.
+      rephrasing.text = fitRewrite(rephrasing.sentence, result.text);
+      ui.showPreview(rephrasing.text);
     }
 
-    /** Accept replaces the sentence like typing, then scans once; nothing is rephrased again. */
+    /** Accept replaces the sentence like typing, then scans once; the rewrite itself is not flagged again. */
     function accept() {
       if (!rephrasing?.text) return;
       const { field, start, end, sentence, text } = rephrasing;
@@ -286,6 +295,7 @@ export default defineContentScript({
         return ui.showRephraseFailure('The text changed. Try again.');
       }
       replace(field, piecesOf(field), start, end, text);
+      rephrased.set(field, (rephrased.get(field) ?? new Set()).add(text));
       closeCard();
       schedule(field, 0);
     }

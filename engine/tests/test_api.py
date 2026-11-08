@@ -1,11 +1,11 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from ghost_engine import service
-from ghost_engine.api import app, model_download, rephraser
+from ghost_engine.api import app, model_download, rephrase_download, rephraser
 from ghost_engine.model_download import ModelDownload
 from ghost_engine.rephrase import (
     RephraseFailedError,
@@ -232,7 +232,7 @@ def test_rephrase_model_reports_the_state_and_error() -> None:
 
     assert (response.status_code, response.json()) == (
         200,
-        {"state": "failed", "error": "not a GGUF file"},
+        {"state": "failed", "downloaded_mb": 0, "error": "not a GGUF file"},
     )
 
 
@@ -242,3 +242,91 @@ def test_a_rephrase_model_that_failed_to_load_answers_503(fake_rephraser: FakeRe
     response = client.post("/rephrase", json={"sentence": "Kari har diabetes."})
 
     assert response.status_code == 503
+
+
+# Rephrase model download (docs/spec.md §2) ----------------------------------------------
+
+
+class StatusOnly:
+    def __init__(self, status: RephraseStatus) -> None:
+        self._status = status
+
+    def status(self) -> RephraseStatus:
+        return self._status
+
+
+@pytest.fixture
+def rephrase_model(tmp_path: Path) -> Iterator[list[ModelDownload]]:
+    """A missing rephrase model; its download writes a fake GGUF file, or fails if told to.
+    The list holds the download, so a test can replace it."""
+
+    def download(target: Path) -> None:
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "model.gguf").write_bytes(b"x")
+
+    downloads = [ModelDownload(download, tmp_path, "model.gguf", run=lambda job: job())]
+    app.dependency_overrides[rephrase_download] = lambda: downloads[0]
+    app.dependency_overrides[rephraser] = lambda: StatusOnly(RephraseStatus("missing"))
+    yield downloads
+    app.dependency_overrides.clear()
+
+
+def test_rephrase_model_reports_a_missing_model(rephrase_model: list[ModelDownload]) -> None:
+    response = client.get("/rephrase/model")
+
+    assert response.json() == {"state": "missing", "downloaded_mb": 0, "error": None}
+
+
+def test_rephrase_model_reports_the_download_progress(
+    rephrase_model: list[ModelDownload], tmp_path: Path
+) -> None:
+    jobs: list[Callable[[], None]] = []
+    (tmp_path / "part").write_bytes(b"x" * 2_000_000)
+    rephrase_model[0] = ModelDownload(lambda target: None, tmp_path, "model.gguf", run=jobs.append)
+    rephrase_model[0].start()
+
+    response = client.get("/rephrase/model")
+
+    assert response.json() == {"state": "downloading", "downloaded_mb": 2, "error": None}
+
+
+def test_a_failed_rephrase_download_is_missing_with_the_error(
+    rephrase_model: list[ModelDownload], tmp_path: Path
+) -> None:
+    def fail(target: Path) -> None:
+        raise OSError("no network")
+
+    rephrase_model[0] = ModelDownload(fail, tmp_path, "model.gguf", run=lambda job: job())
+    rephrase_model[0].start()
+
+    response = client.get("/rephrase/model")
+
+    assert response.json() == {"state": "missing", "downloaded_mb": 0, "error": "no network"}
+
+
+def test_a_downloaded_rephrase_model_not_yet_loaded_is_idle(
+    rephrase_model: list[ModelDownload],
+) -> None:
+    response = client.post("/rephrase/model/download")
+
+    assert response.status_code == 202
+    assert response.json() == {"state": "idle", "downloaded_mb": 0, "error": None}
+
+
+def test_a_web_page_may_not_start_the_rephrase_download(
+    rephrase_model: list[ModelDownload],
+) -> None:
+    response = client.post("/rephrase/model/download", headers={"Origin": "https://example.com"})
+
+    assert response.status_code == 403
+    assert rephrase_model[0].status().state == "missing"
+
+
+def test_the_extension_may_start_the_rephrase_download(
+    rephrase_model: list[ModelDownload],
+) -> None:
+    response = client.post(
+        "/rephrase/model/download", headers={"Origin": "chrome-extension://abcdef"}
+    )
+
+    assert response.status_code == 202

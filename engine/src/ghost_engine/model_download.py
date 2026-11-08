@@ -1,7 +1,8 @@
-"""Download the GLiNER model when the user asks for it in the popup (ADR-0004).
+"""Download a model when the user asks for it in the popup (ADR-0004): the GLiNER model
+after POST /model/download, the rephrase model after POST /rephrase/model/download.
 
-The Engine sends no user text anywhere. This is its only network call: it fetches the
-pinned model files, and only after POST /model/download.
+The Engine sends no user text anywhere. These are its only network calls: each fetches the
+pinned model files, and only after the user asks.
 """
 
 import threading
@@ -31,11 +32,13 @@ class ModelDownload:
         model_file: str,
         *,
         run: Callable[[Callable[[], None]], None],
+        on_ready: Callable[[], None] | None = None,
     ) -> None:
         self._download = download
         self._target = target
         self._model_file = model_file
         self._run = run
+        self._on_ready = on_ready  # after a download that worked, in the same background job
         # Requests run in a thread pool; two clicks must not start two downloads.
         self._lock = threading.Lock()
         self._downloading = False
@@ -65,8 +68,11 @@ class ModelDownload:
             self._download(self._target)
         except Exception as error:  # shown in the popup; the user can try again
             self._error = str(error) or type(error).__name__
+            return
         finally:
             self._downloading = False
+        if self._on_ready is not None:
+            self._on_ready()
 
 
 def _megabytes(folder: Path) -> int:
@@ -81,11 +87,11 @@ def _megabytes(folder: Path) -> int:
     return round(total / 1_000_000)
 
 
-def _in_background(job: Callable[[], None]) -> None:
+def in_background(job: Callable[[], None]) -> None:
     # Daemon: stopping the Engine mid-download doesn't wait; the next start resumes it.
-    threading.Thread(target=job, name="gliner-download", daemon=True).start()
+    threading.Thread(target=job, name="model-download", daemon=True).start()
 
 
 @cache
 def gliner_download() -> ModelDownload:
-    return ModelDownload(download_model, model_dir(), MODEL_FILE, run=_in_background)
+    return ModelDownload(download_model, model_dir(), MODEL_FILE, run=in_background)

@@ -100,6 +100,9 @@ def download_model(target: Path) -> None:
     POST /model/download when the user clicks Download in the popup (ADR-0004)."""
     from huggingface_hub import snapshot_download  # only needed for the download
 
+    from ghost_engine.hub import plain_http
+
+    plain_http()
     snapshot_download(
         MODEL_ID, revision=MODEL_REVISION, allow_patterns=MODEL_FILES, local_dir=target
     )

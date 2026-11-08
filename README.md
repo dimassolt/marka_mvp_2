@@ -15,9 +15,9 @@ First time on a new machine, from the repo folder:
 - macOS or Linux: `./scripts/install.sh`
 - Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File scripts\install.ps1`
 
-The script installs uv if it is missing, the Engine's Python packages (the first run builds llama-cpp-python, which takes a few minutes), the GLiNER model (about 600 MB) and the rephrase model (Gemma 4 E2B, about 3.1 GB), both downloaded once, and the Extension's npm packages, then runs the Engine tests. It needs Node 22 or newer. On Windows it also needs Rust from [rustup.rs](https://rustup.rs), because the GLiNER runtime is built from source there. If the model is missing later, the popup offers a **Download model** button that does the same download through the Engine.
+The script installs uv if it is missing, the Engine's Python packages (the first run builds llama-cpp-python, which takes a few minutes), the GLiNER model (about 600 MB) and the rephrase model (Gemma 4 E2B, about 3.1 GB), both downloaded once, and the Extension's npm packages, then runs the Engine tests. It needs Node 22 or newer. On Windows it also needs Rust from [rustup.rs](https://rustup.rs), because the GLiNER runtime is built from source there. Both models are optional: basic checks (ID numbers, cards, emails, phone numbers, first names, Domain words) run without them. If one is missing, the popup lists them in order, 1 GLiNER then 2 Gemma 4, each with a **Download** button that does the same download through the Engine.
 
-Then start both with `make start` (macOS or Linux) or `powershell -ExecutionPolicy Bypass -File scripts\start.ps1` (Windows, which has no make). Ctrl+C stops both. Or run `uv run ghost-engine` in `engine/` and `npm run dev` in `extension/`.
+Then start both with `make start` (macOS or Linux; it installs missing packages but no models, `make models` fetches both) or `powershell -ExecutionPolicy Bypass -File scripts\start.ps1` (Windows, which has no make). Ctrl+C stops both. Or run `uv run ghost-engine` in `engine/` and `npm run dev` in `extension/`.
 
 **Windows: fast_gliner fails to link.** Two native libraries it bundles use different C++ runtimes. `install.ps1` sets `CXXFLAGS_x86_64_pc_windows_msvc=/MD` and `CFLAGS_x86_64_pc_windows_msvc=/MD` for you. If you run `uv sync` by hand and it rebuilds fast_gliner, set them first:
 
