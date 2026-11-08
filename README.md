@@ -71,7 +71,8 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
 **Could:**
 - a School Domain
 
-**Later:**
+**Later** (steps in [docs/roadmap.md](docs/roadmap.md)):
+- a one-click install: the Extension from a store, the Engine as a Mac app
 - the desktop App
 - unloading the rephrase model when idle
 - a warning before Send
