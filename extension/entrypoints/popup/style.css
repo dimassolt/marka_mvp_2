@@ -78,6 +78,18 @@ svg {
   padding: 16px 16px 12px;
 }
 
+/* The header ghost opens the website in a new tab. */
+.ghost-link {
+  display: flex;
+  flex: none;
+  border-radius: 8px;
+}
+
+.ghost-link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .ghost {
   position: relative;
   flex: none;

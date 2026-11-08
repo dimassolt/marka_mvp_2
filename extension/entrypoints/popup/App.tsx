@@ -136,6 +136,9 @@ export function App() {
   return <Main onNewDomain={() => setView('new-domain')} onSettings={() => setView('settings')} />;
 }
 
+/** The product website; the header ghost links to it. */
+const WEBSITE_URL = 'https://kirill-antonovich.github.io/ghost-agent-website/';
+
 /** The ghost wears sunglasses while it checks this site; the chip shows the Engine. */
 function Header({
   running,
@@ -149,7 +152,16 @@ function Header({
 }) {
   return (
     <header class="header">
-      <Ghost on={on} animate={animate} />
+      <a
+        class="ghost-link"
+        href={WEBSITE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Ghost Agent website"
+        title="Ghost Agent website"
+      >
+        <Ghost on={on} animate={animate} />
+      </a>
       <h1 class="title">Ghost Agent</h1>
       <span class={running ? 'chip' : 'chip chip--down'}>{running ? 'Running' : 'Engine down'}</span>
     </header>
