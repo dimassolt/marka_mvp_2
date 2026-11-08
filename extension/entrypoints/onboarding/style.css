@@ -1,3 +1,7 @@
+/* Hallmark · theme: dose (by request) · dose: ink, cobalt stamp · shape: app screen · genre: modern-minimal · signature: the practice field with main's Card and Ghost bar · v2.0.0 */
+/* critique: one paper label per step; the practice Card and Ghost bar copy main's content.ts styles so the tour shows what a chat shows. */
+/* Hallmark · waive 24b · values copied from content.ts UI_STYLES and popup/style.css · main's Card, Ghost bar and controls win; docs/design.md is the locked system */
+/* Hallmark · answered F23 · an extension tab, never linked or previewed, so no meta description */
 /* Onboarding styles. Every colour, font, radius and shadow comes from assets/tokens.css. */
 
 *,
@@ -9,6 +13,7 @@
 html,
 body {
   margin: 0;
+  overflow-x: clip;
 }
 
 body {
@@ -47,7 +52,8 @@ button,
     color var(--dur-micro) var(--ease-out),
     background-color var(--dur-micro) var(--ease-out),
     border-color var(--dur-micro) var(--ease-out),
-    opacity var(--dur-micro) var(--ease-out);
+    opacity var(--dur-micro) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out);
 }
 
 button:focus-visible {
@@ -146,6 +152,7 @@ svg {
 }
 
 .display {
+  text-wrap: balance;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 34px;
@@ -546,11 +553,6 @@ svg {
   font-weight: 500;
 }
 
-.choice__example {
-  font-size: 13px;
-  color: var(--color-cat-domain-ink);
-}
-
 .pill {
   margin-left: auto;
   padding: 1px 8px;
@@ -654,28 +656,14 @@ svg {
   text-decoration-color: var(--color-cat-domain);
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-lg);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.legend li {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-}
-
-/* Practice field */
+/* Practice field. Room on top for the Ghost bar tab, which sits outside the field's box. */
 
 .field {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
   padding: var(--space-md);
   border: var(--rule-hair) solid var(--color-rule-2);
   border-radius: var(--radius-surface);
@@ -721,24 +709,37 @@ svg {
   color: var(--color-ink);
 }
 
-/* Card: a pharmacy label above the Finding */
+/* Card: main's pharmacy label (content.ts UI_STYLES), above the Finding */
 
 .card {
   position: absolute;
-  bottom: calc(100% + 2px);
+  bottom: calc(100% + 8px);
   left: 0;
   z-index: 2;
   display: flex;
   flex-direction: column;
   width: 300px;
-  max-width: calc(100vw - 48px);
   background: var(--color-paper-2);
-  border: var(--rule-hair) solid var(--color-rule);
+  color: var(--color-ink);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-lift);
-  font-size: 15px;
+  font-size: var(--text-sm);
   line-height: 1.4;
   white-space: normal;
+  text-align: left;
+  animation: fade-in 150ms ease-out;
+}
+
+.card--id {
+  --cat: var(--color-cat-id);
+}
+
+.card--contact {
+  --cat: var(--color-cat-contact);
+}
+
+.card--domain {
+  --cat: var(--color-cat-domain);
 }
 
 /* Keeps the hover alive while the pointer moves from the word up to the Card. */
@@ -748,129 +749,219 @@ svg {
   top: 100%;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 10px;
 }
 
-.card__top {
+.card__label {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: var(--space-sm) var(--space-sm) var(--space-sm);
+  gap: var(--space-xs);
+  padding: 14px 16px 18px;
 }
 
-.card__cat {
+.card__name {
   align-self: flex-start;
-  font-weight: 500;
+  font-size: 13px;
+  text-decoration: underline wavy var(--cat) 1.5px;
+  text-underline-offset: 4px;
 }
 
 .card__value {
-  font-size: 14px;
+  font-size: 17px;
+  overflow-wrap: anywhere;
 }
 
-.stamp {
-  align-self: flex-end;
-  margin-top: 4px;
-  padding: 2px 8px;
-  border: 1.5px solid var(--color-stamp);
-  border-radius: 4px;
+/* A plaster stuck across the top-right corner: overhangs the edge, torn (dashed) ends. */
+.card__stamp {
+  position: absolute;
+  top: -6px;
+  right: -12px;
+  padding: 5px 14px;
+  border-block: 1px solid var(--color-stamp);
+  border-inline: 1.5px dashed var(--color-stamp);
+  border-radius: 2px;
+  background: var(--color-stamp-soft);
   color: var(--color-stamp);
-  font-size: 13px;
-  transform: rotate(-3deg);
+  box-shadow: var(--shadow-lift);
+  font-size: var(--text-xs);
+  transform: rotate(8deg);
+  animation: fade-in 150ms ease-out 100ms backwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.card__tear {
+  border-top: var(--rule-tear) dashed var(--color-rule);
 }
 
 .card__actions {
   display: flex;
-  gap: var(--space-xs);
-  padding: var(--space-sm);
-  border-top: var(--rule-tear) dashed var(--color-rule);
+  gap: 6px;
+  padding: 14px 14px 16px;
 }
 
-.card__actions .text-btn {
-  height: 34px;
-  margin-left: auto;
-}
-
-/* Ghost bar: a label tab on the field's bottom edge */
-
-.bar-wrap {
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
-  min-height: 34px;
-}
-
-.ghost-bar {
-  height: 34px;
+.btn--card {
+  height: 38px;
   padding: 0 14px;
-  border: var(--rule-hair) solid var(--color-rule-2);
-  border-left: 2px dashed var(--color-stamp);
-  border-radius: 8px;
-  background: var(--color-paper-3);
-  font-size: 14px;
-  color: var(--color-ink-2);
+  font-size: var(--text-sm);
 }
 
-.ghost-bar__count {
+.btn-clear.btn--card {
+  padding: 0 12px;
+}
+
+.text-btn.btn--card {
+  padding: 0 6px;
+}
+
+.card__rephrase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 14px 16px 0;
+}
+
+.card__rephrase .card__actions {
+  padding: 6px 0 16px;
+}
+
+.card__status {
+  color: var(--color-muted);
+}
+
+.card__status--failed {
+  color: var(--color-cat-id-ink);
+  font-size: var(--text-xs);
+}
+
+.card__preview {
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background: var(--color-paper-3);
+  overflow-wrap: anywhere;
+}
+
+.card__note {
+  padding: 0 16px 14px;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+/* Ghost bar: main's label tab on top of the field's box, outside it at the right */
+
+.ghost {
+  position: absolute;
+  bottom: 100%;
+  right: var(--radius-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.ghost__tab {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: var(--rule-hair) solid var(--color-rule-2);
+  border-bottom: 0;
+  border-left: 1.5px dashed var(--color-stamp);
+  border-radius: 8px 8px 0 0;
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ghost__count {
   color: var(--color-stamp);
 }
 
-.ghost-bar--open {
+.ghost__tab[aria-expanded='true'] {
+  border: var(--rule-hair) solid var(--color-accent-deep);
+  border-bottom: 0;
   background: var(--color-accent);
-  border-color: var(--color-accent-deep);
   color: var(--color-accent-ink);
 }
 
-.ghost-bar--open .ghost-bar__count {
-  color: var(--color-accent-ink);
+.ghost__tab[aria-expanded='true'] .ghost__count {
+  color: inherit;
 }
 
-.bar-menu {
+.ghost__menu {
   position: absolute;
-  right: 0;
   bottom: calc(100% + 6px);
+  right: 0;
   z-index: 2;
+  min-width: 180px;
   display: flex;
   flex-direction: column;
-  min-width: 180px;
-  padding: 4px;
+  gap: 2px;
+  padding: 6px;
   background: var(--color-paper-2);
-  border: var(--rule-hair) solid var(--color-rule);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-lift);
 }
 
-.menu-item {
+.ghost__menu button {
+  height: 36px;
   display: flex;
-  justify-content: space-between;
-  height: 38px;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
   padding: 0 10px;
   border: 0;
   border-radius: 6px;
-  background: none;
-  font-size: 15px;
-  text-align: left;
-}
-
-.menu-item:hover:not(:disabled) {
-  background: var(--color-paper-3);
-}
-
-.explain {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: var(--space-sm);
-  padding-top: var(--space-md);
-  border-top: var(--rule-tear) dashed var(--color-rule);
-}
-
-.explain dt {
+  background: transparent;
+  color: var(--color-ink);
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
-.explain dd {
-  font-size: 14px;
+.ghost__menu button:hover,
+.ghost__menu button:focus-visible {
+  background: var(--color-paper-3);
+}
+
+/* Name model download on the Engine step: the popup's ModelNotice box */
+
+.model {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--color-paper-3);
+  border-radius: var(--radius-card);
+}
+
+.model__title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.model__text {
   color: var(--color-ink-2);
+}
+
+.bar {
+  align-self: stretch;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-rule-2);
+  overflow: hidden;
+}
+
+.bar__fill {
+  display: block;
+  height: 100%;
+  background: var(--color-stamp);
 }
 
 /* Restore */
@@ -901,19 +992,19 @@ svg {
   text-underline-offset: 4px;
 }
 
+@media (max-width: 600px) {
+  .card {
+    width: 260px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     transition: none !important;
+    animation: none !important;
   }
-}
-
-/* Practice field: hint beside the Ghost bar once something was hidden or ignored */
-
-.bar-hint {
-  margin-right: auto;
-  align-self: center;
 }
 
 .link-btn {

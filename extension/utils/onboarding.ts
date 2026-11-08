@@ -1,6 +1,7 @@
 import type { Finding } from './engine-status';
 import { sites } from './popup-settings';
 import { colourOf, type Colour } from './underlines';
+import { remember, type Vault } from './vault';
 
 /** A piece of the practice text: plain, or a Finding with its underline colour. */
 export type TextPiece = { text: string } | { text: string; category: string; colour: Colour };
@@ -9,48 +10,22 @@ export type TextPiece = { text: string } | { text: string; category: string; col
 export function splitByFindings(text: string, findings: Finding[]): TextPiece[] {
   const pieces: TextPiece[] = [];
   let last = 0;
-  for (const { start, end, category } of findings) {
+  for (const { start, end, category, group } of findings) {
     if (start > last) pieces.push({ text: text.slice(last, start) });
-    pieces.push({ text: text.slice(start, end), category, colour: colourOf(category) });
+    pieces.push({ text: text.slice(start, end), category, colour: colourOf(group) });
     last = end;
   }
   if (last < text.length) pieces.push({ text: text.slice(last) });
   return pieces;
 }
 
-/** Placeholder prefix per Category (docs/spec.md §1); DATA for any other. */
-const PREFIXES: Record<string, string> = {
-  fodselsnummer: 'FNR',
-  d_nummer: 'DNR',
-  bank_account: 'ACCOUNT',
-  payment_card: 'CARD',
-  iban: 'IBAN',
-  secret: 'SECRET',
-  password: 'PASSWORD',
-  email: 'EMAIL',
-  phone: 'PHONE',
-  person_name: 'PERSON',
-  health: 'HEALTH',
-  education: 'EDUCATION',
-  courts: 'COURTS',
-  industrial: 'INDUSTRIAL',
-  religious: 'RELIGIOUS',
-};
-
-/** The Placeholder each value would get on Hide: numbered per prefix, the same value the same one. */
-export function placeholdersFor(values: { value: string; category: string }[]): string[] {
-  const given = new Map<string, string>();
-  const counts = new Map<string, number>();
-  return values.map(({ value, category }) => {
-    const prefix = PREFIXES[category] ?? 'DATA';
-    const key = `${prefix}\u0000${value}`;
-    if (!given.has(key)) {
-      const n = (counts.get(prefix) ?? 0) + 1;
-      counts.set(prefix, n);
-      given.set(key, `[${prefix}_${n}]`);
-    }
-    return given.get(key)!;
-  });
+/**
+ * The Placeholder each Finding would get on Hide, from a fresh Vault: the Engine's prefix
+ * (DATA from an older Engine), one Placeholder per value and per person (docs/spec.md §3).
+ */
+export function placeholdersFor(text: string, findings: Finding[]): string[] {
+  const vault: Vault = {};
+  return findings.map(({ start, end, prefix = 'DATA' }) => remember(vault, text.slice(start, end), prefix));
 }
 
 /** The practice text, a short version of the demo note (docs/spec.md §5). */
@@ -60,63 +35,20 @@ export const SAMPLE_TEXT =
 /** What the Engine finds in SAMPLE_TEXT with the Health Domain; shown while it isn't running. */
 export const SAMPLE_FINDINGS: Finding[] = (
   [
-    ['Kari', 'person_name', 0.6],
-    ['01019000083', 'fodselsnummer', 0.99],
-    ['diabetes', 'health', 0.8],
-    ['+47 912 34 567', 'phone', 0.9],
+    ['Kari', 'person_name', 0.6, 'PERSON', 'Name', 'contact'],
+    ['01019000083', 'fodselsnummer', 0.99, 'FNR', 'Fødselsnummer', 'id'],
+    ['diabetes', 'health', 0.8, 'HEALTH', 'Health', 'domain'],
+    ['+47 912 34 567', 'phone', 0.9, 'PHONE', 'Phone', 'contact'],
   ] as const
-).map(([value, category, confidence]) => {
+).map(([value, category, confidence, prefix, name, group]) => {
   const start = SAMPLE_TEXT.indexOf(value);
-  return { start, end: start + value.length, category, confidence };
+  return { start, end: start + value.length, category, confidence, prefix, name, group };
 });
-
-/** How the onboarding presents a built-in Domain. */
-export type DomainCard = { title: string; about: string; example?: string };
-
-/** Copy per built-in Domain; examples come from each keyword list (docs/spec.md §1). */
-const DOMAIN_CARDS: Record<string, DomainCard> = {
-  free: { title: 'Free', about: 'The Base checks only. Good for everyday chats.' },
-  health: {
-    title: 'Health',
-    about:
-      'Adds health words in Bokmål and English: diagnoses, medicines and terms like innlagt and sykemeldt.',
-    example: 'diabetes · sykemeldt · insulin',
-  },
-  education: {
-    title: 'Education',
-    about: 'Adds student words: special needs, absence, discipline and grades.',
-    example: 'IOP · fravær · spesialundervisning',
-  },
-  courts: {
-    title: 'Courts',
-    about: 'Adds court words: closed hearings, draft decisions and sensitive case types.',
-    example: 'lukkede dører · barnevern',
-  },
-  industrial: {
-    title: 'Industrial',
-    about: 'Adds plant words: machine makers, machine park, lines and capacity.',
-    example: 'Fanuc · produksjonslinje',
-  },
-  religious: {
-    title: 'Religious',
-    about: 'Adds parish words: membership, pastoral care and ceremonies.',
-    example: 'menighet · sjelesorg',
-  },
-};
-
-/** The card for a built-in Domain. One added later without copy here is shown by its name. */
-export function domainCard(domain: string): DomainCard {
-  const known = DOMAIN_CARDS[domain];
-  if (known) return known;
-  const words = domain.replace(/[_-]+/g, ' ');
-  const title = words.charAt(0).toUpperCase() + words.slice(1);
-  return { title, about: `Adds the ${title} word list, plus the Base checks.` };
-}
 
 /** Built-in Domains shown as cards; the rest go in a compact list, so the page stays small. */
 const FEATURED = ['free', 'health', 'education'];
 
-export function featuredDomains(all: readonly string[]): { cards: string[]; more: string[] } {
+export function featuredDomains<D extends string>(all: readonly D[]): { cards: D[]; more: D[] } {
   return {
     cards: all.filter((d) => FEATURED.includes(d)),
     more: all.filter((d) => !FEATURED.includes(d)),

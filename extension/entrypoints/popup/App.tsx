@@ -57,12 +57,16 @@ function useHostname(): string {
   return host;
 }
 
-/** The Engine's GLiNER model. Asks again every 2 s while it downloads. */
-function useModelStatus(): [ModelStatus | null, () => void] {
+/**
+ * The Engine's GLiNER model. Asks again every 2 s while it downloads, and when `running`
+ * changes (the onboarding page stays open while the user starts the Engine).
+ */
+export function useModelStatus(running = true): [ModelStatus | null, () => void] {
   const [status, setStatus] = useState<ModelStatus | null>(null);
   useEffect(() => {
-    modelStatus().then(setStatus);
-  }, []);
+    if (running) modelStatus().then(setStatus);
+    else setStatus(null);
+  }, [running]);
   useEffect(() => {
     if (status?.state !== 'downloading') return;
     const timer = setTimeout(() => modelStatus().then(setStatus), 2000);
@@ -74,12 +78,13 @@ function useModelStatus(): [ModelStatus | null, () => void] {
   return [status, download];
 }
 
-/** The Engine's rephrase model. Asks again every 2 s until it is loaded or has failed. */
-function useRephraseModelStatus(): RephraseModelStatus | null {
+/** The Engine's rephrase model. Asks again every 2 s until it is loaded or has failed, and when `running` changes. */
+export function useRephraseModelStatus(running = true): RephraseModelStatus | null {
   const [status, setStatus] = useState<RephraseModelStatus | null>(null);
   useEffect(() => {
-    rephraseModelStatus().then(setStatus);
-  }, []);
+    if (running) rephraseModelStatus().then(setStatus);
+    else setStatus(null);
+  }, [running]);
   useEffect(() => {
     if (status?.state !== 'idle' && status?.state !== 'loading') return;
     const timer = setTimeout(() => rephraseModelStatus().then(setStatus), 2000);
@@ -651,7 +656,7 @@ const MODEL_PILL: Record<ModelStatus['state'], string> = {
  * Offers the GLiNER model download, like scripts/install.sh does. Without the model the
  * Engine still checks everything else, so the popup says plainly what is off.
  */
-function ModelNotice({
+export function ModelNotice({
   status,
   onDownload,
   flat = false,

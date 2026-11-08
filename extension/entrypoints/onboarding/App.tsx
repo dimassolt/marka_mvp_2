@@ -7,11 +7,17 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { checkEngine, engineRunning, type Finding } from '@/utils/engine-status';
+import { ModelNotice, useModelStatus, useRephraseModelStatus } from '@/entrypoints/popup/App';
+import {
+  REPHRASE_FAILURES,
+  checkEngine,
+  engineRunning,
+  type Finding,
+  type RephraseResult,
+} from '@/utils/engine-status';
 import {
   SAMPLE_FINDINGS,
   SAMPLE_TEXT,
-  domainCard,
   featuredDomains,
   AI_CHAT_SITES,
   checkEverywhere,
@@ -22,6 +28,7 @@ import {
 } from '@/utils/onboarding';
 import {
   BUILT_IN_DOMAINS,
+  BUILT_IN_DOMAIN_INFO,
   addSite,
   addWord,
   createDomain,
@@ -32,6 +39,7 @@ import {
   selectedDomain,
   sites,
 } from '@/utils/popup-settings';
+import { sentenceAround } from '@/utils/sentence';
 
 const STEPS = ['Welcome', 'Engine', 'Domain', 'Try it', 'Done'] as const;
 
@@ -181,7 +189,7 @@ function Welcome({ onNext, onSkip }: { onNext: () => void; onSkip: () => void })
         </Pledge>
         <Pledge title="You decide">
           Ghost Agent only underlines. Nothing in your message changes until you click Hide or
-          Rephrase.
+          accept a Rephrase.
         </Pledge>
       </ul>
 
@@ -236,6 +244,7 @@ function Arrow({ crossed = false }: { crossed?: boolean }) {
 
 function Engine({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const running = useEngine(true);
+  const [model, download] = useModelStatus(running);
   return (
     <section class="step">
       <h1 class="display">Start the Engine</h1>
@@ -252,6 +261,8 @@ function Engine({ onNext, onBack }: { onNext: () => void; onBack: () => void }) 
             : 'Waiting for the Engine. This page notices as soon as it starts.'}
         </span>
       </div>
+
+      {running && model && model.state !== 'ready' && <ModelNotice status={model} onDownload={download} />}
 
       {!running && (
         <div class="stack">
@@ -297,7 +308,7 @@ function Domains({ onNext, onBack }: { onNext: () => void; onBack: () => void })
       <div class="base">
         <span class="label">Base checks, always on</span>
         <ul class="tags">
-          {['Fødselsnummer', 'D-nummer', 'Bank account', 'Card', 'IBAN', 'Passwords and keys', 'Email', 'Phone', 'First names'].map(
+          {['Fødselsnummer', 'D-nummer', 'Bank account', 'Card', 'IBAN', 'Passwords and keys', 'Email', 'Phone', 'Names'].map(
             (t) => (
               <li key={t} class="tag">
                 {t}
@@ -308,21 +319,17 @@ function Domains({ onNext, onBack }: { onNext: () => void; onBack: () => void })
       </div>
 
       <div class="choices" role="radiogroup" aria-label="Domain">
-        {cards.map((name) => {
-          const { title, about, example } = domainCard(name);
-          return (
-            <Choice
-              key={name}
-              checked={domain === name && !making}
-              onSelect={() => pick(name)}
-              title={title}
-              tag="Built-in"
-              example={example}
-            >
-              {about}
-            </Choice>
-          );
-        })}
+        {cards.map((name) => (
+          <Choice
+            key={name}
+            checked={domain === name && !making}
+            onSelect={() => pick(name)}
+            title={BUILT_IN_DOMAIN_INFO[name].label}
+            tag="Built-in"
+          >
+            {BUILT_IN_DOMAIN_INFO[name].about}
+          </Choice>
+        ))}
         <Choice
           checked={making}
           onSelect={() => setMaking(true)}
@@ -349,7 +356,7 @@ function Domains({ onNext, onBack }: { onNext: () => void; onBack: () => void })
             </option>
             {more.map((name) => (
               <option key={name} value={name}>
-                {domainCard(name).title}
+                {BUILT_IN_DOMAIN_INFO[name].label}
               </option>
             ))}
             {Object.keys(own).map((name) => (
@@ -358,7 +365,7 @@ function Domains({ onNext, onBack }: { onNext: () => void; onBack: () => void })
               </option>
             ))}
           </select>
-          {inList && isBuiltInDomain(domain) && <p class="hint">{domainCard(domain).about}</p>}
+          {inList && isBuiltInDomain(domain) && <p class="hint">{BUILT_IN_DOMAIN_INFO[domain].about}</p>}
         </div>
       )}
 
@@ -377,14 +384,12 @@ function Choice({
   onSelect,
   title,
   tag,
-  example,
   children,
 }: {
   checked: boolean;
   onSelect: () => void;
   title: string;
   tag: string;
-  example?: string;
   children: ComponentChildren;
 }) {
   return (
@@ -395,7 +400,6 @@ function Choice({
         <span class="pill">{tag}</span>
       </span>
       <span class="body">{children}</span>
-      {example && <span class="mono choice__example">{example}</span>}
     </button>
   );
 }
@@ -498,6 +502,7 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
 
 function Practice({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const running = useEngine(true);
+  const rephraseModel = useRephraseModelStatus(running);
   const domain = useItem(selectedDomain) ?? 'free';
   const [text, setText] = useState(SAMPLE_TEXT);
   const [found, setFound] = useState<Finding[]>(SAMPLE_FINDINGS);
@@ -516,17 +521,28 @@ function Practice({ onNext, onBack }: { onNext: () => void; onBack: () => void }
     return () => clearTimeout(timer);
   }, [running, text, domain]);
 
+  const rephraseOff = !running
+    ? 'Start the Engine to try Rephrase.'
+    : rephraseModel?.state === 'ready'
+      ? null
+      : rephraseModel?.state === 'loading' || rephraseModel?.state === 'idle'
+        ? 'Rephrase model is loading. Try again in a few seconds.'
+        : REPHRASE_FAILURES['model-missing'];
+
   return (
     <section class="step">
       <h1 class="display">Try it here</h1>
       <p class="lead">
-        This is what Ghost Agent does in a chat. Hover an underline to open its Card, or use the
-        tab below the text to hide everything at once.
+        Hover an underline to open its Card. The tab on top of the field hides everything at once.
       </p>
 
-      <Legend />
-
-      <Field key={`${text}\u0000${JSON.stringify(found)}`} text={text} findings={found} />
+      <Field
+        key={`${text}\u0000${JSON.stringify(found)}`}
+        text={text}
+        findings={found}
+        rephraseOff={rephraseOff}
+        onRewrite={setText}
+      />
 
       {running ? (
         <div class="stack">
@@ -555,68 +571,49 @@ function Practice({ onNext, onBack }: { onNext: () => void; onBack: () => void }
   );
 }
 
-/** A built-in Domain's title, or the user's own Domain name as they typed it. */
+/** A built-in Domain's label, or the user's own Domain name as they typed it. */
 function domainName(domain: string): string {
-  return isBuiltInDomain(domain) ? domainCard(domain).title : domain;
+  return isBuiltInDomain(domain) ? BUILT_IN_DOMAIN_INFO[domain].label : domain;
 }
 
-function Legend() {
-  return (
-    <ul class="legend" aria-label="Underline colours">
-      <li>
-        <span class="u u--id">01019000083</span>
-        <span class="hint">ID numbers, cards, secrets</span>
-      </li>
-      <li>
-        <span class="u u--contact">Kari</span>
-        <span class="hint">Names, email, phone</span>
-      </li>
-      <li>
-        <span class="u u--domain">diabetes</span>
-        <span class="hint">Your Domain's words</span>
-      </li>
-    </ul>
-  );
-}
+/** The open Card's Rephrase: waiting for the Engine, the rewrite to accept, or why there is none. */
+type Rephrasing =
+  | { i: number; state: 'waiting' }
+  | { i: number; state: 'preview'; start: number; end: number; text: string }
+  | { i: number; state: 'failed'; message: string };
 
-const CATEGORY_NAMES: Record<string, string> = {
-  fodselsnummer: 'Fødselsnummer',
-  d_nummer: 'D-nummer',
-  bank_account: 'Bank account',
-  payment_card: 'Payment card',
-  iban: 'IBAN',
-  secret: 'Secret',
-  password: 'Password',
-  email: 'Email',
-  phone: 'Phone',
-  person_name: 'Name',
-  health: 'Health',
-  education: 'Education',
-  courts: 'Courts',
-  industrial: 'Industrial',
-  religious: 'Religious',
-  custom: 'Your word',
-};
-
-/** A practice field: the real underline colours, Card, Ghost bar, Hide, Ignore and their "all". */
-function Field({ text, findings }: { text: string; findings: Finding[] }) {
+/**
+ * A practice field with main's Card and Ghost bar: the real underline colours, Hide, Rephrase,
+ * Ignore and their "all". Rephrase asks the Engine like a chat does; Accept rewrites the text.
+ */
+function Field({
+  text,
+  findings,
+  rephraseOff,
+  onRewrite,
+}: {
+  text: string;
+  findings: Finding[];
+  /** Why Rephrase can't run here, or null when it can. */
+  rephraseOff: string | null;
+  onRewrite: (text: string) => void;
+}) {
   const pieces = useMemo(() => splitByFindings(text, findings), [text, findings]);
-  const placeholders = useMemo(
-    () =>
-      placeholdersFor(
-        findings.map((f) => ({ value: text.slice(f.start, f.end), category: f.category })),
-      ),
-    [text, findings],
-  );
+  const placeholders = useMemo(() => placeholdersFor(text, findings), [text, findings]);
   const [hidden, setHidden] = useState<number[]>([]);
   const [ignored, setIgnored] = useState<number[]>([]);
   const [open, setOpen] = useState<number | null>(null);
   const [menu, setMenu] = useState(false);
+  const [rephrasing, setRephrasing] = useState<Rephrasing | null>(null);
 
   const left = findings.map((_, i) => i).filter((i) => !hidden.includes(i) && !ignored.includes(i));
+  const close = () => {
+    setOpen(null);
+    setRephrasing(null);
+  };
   const hide = (which: number[]) => {
     setHidden([...hidden, ...which]);
-    setOpen(null);
+    close();
     setMenu(false);
   };
   const ignoreAll = () => {
@@ -629,64 +626,147 @@ function Field({ text, findings }: { text: string; findings: Finding[] }) {
     setIgnored([]);
   };
   const touched = hidden.length + ignored.length > 0;
-  // Ignore covers every occurrence of the same value and Category (docs/spec.md §3).
+  // Ignore covers every occurrence of the same value (docs/spec.md §3).
   const ignore = (i: number) => {
-    const same = findings
-      .map((f, j) => j)
-      .filter((j) => placeholders[j] === placeholders[i]);
+    const same = findings.map((_, j) => j).filter((j) => placeholders[j] === placeholders[i]);
     setIgnored([...ignored, ...same]);
-    setOpen(null);
+    close();
   };
+  const rephrase = async (i: number) => {
+    const { start, end } = sentenceAround(text, findings[i]!.start, findings[i]!.end);
+    setRephrasing({ i, state: 'waiting' });
+    const result: RephraseResult | undefined = await browser.runtime
+      .sendMessage({ type: 'rephrase', sentence: text.slice(start, end) })
+      .catch(() => undefined);
+    // The Card may have closed while the Engine worked.
+    setRephrasing((now) => {
+      if (now?.i !== i) return now;
+      if (!result) return { i, state: 'failed', message: REPHRASE_FAILURES.failed };
+      if (!result.ok) return { i, state: 'failed', message: REPHRASE_FAILURES[result.reason] };
+      return { i, state: 'preview', start, end, text: result.text };
+    });
+  };
+  const accept = () => {
+    if (rephrasing?.state !== 'preview') return;
+    onRewrite(text.slice(0, rephrasing.start) + rephrasing.text + text.slice(rephrasing.end));
+  };
+  // While a Rephrase runs or waits for Accept, the Card stays open without the pointer.
+  const busy = (i: number) => rephrasing?.i === i && rephrasing.state !== 'failed';
 
   useEffect(() => {
-    const close = (e: KeyboardEvent) => e.key === 'Escape' && (setOpen(null), setMenu(false));
-    window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      close();
+      setMenu(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   let index = -1;
   return (
     <div class="field">
+      {left.length > 0 && (
+        <div class="ghost">
+          {menu && (
+            <div class="ghost__menu" role="menu" aria-label="Ghost bar">
+              <button type="button" role="menuitem" onClick={() => hide(left)}>
+                Hide all<span class="mono ghost__count">{left.length}</span>
+              </button>
+              <button type="button" role="menuitem" onClick={ignoreAll}>
+                Ignore all<span class="mono ghost__count">{left.length}</span>
+              </button>
+            </div>
+          )}
+          <button type="button" class="ghost__tab" aria-expanded={menu} onClick={() => setMenu(!menu)}>
+            <span class="mono ghost__count">{left.length}</span>to check
+          </button>
+        </div>
+      )}
+
       <p class="field__text">
         {pieces.map((piece, p) => {
           if (!('colour' in piece)) return <span key={p}>{piece.text}</span>;
           const i = ++index;
           if (hidden.includes(i)) return <span key={p} class="mono placeholder">{placeholders[i]}</span>;
           if (ignored.includes(i)) return <span key={p}>{piece.text}</span>;
+          const name = findings[i]!.name ?? piece.category;
+          const r = rephrasing?.i === i ? rephrasing : null;
           return (
             <span
               key={p}
               class="finding"
-              onMouseEnter={() => setOpen(i)}
-              onMouseLeave={() => setOpen((o) => (o === i ? null : o))}
+              onMouseEnter={() => open !== i && (close(), setOpen(i))}
+              onMouseLeave={() => !busy(i) && open === i && close()}
             >
               <button
                 type="button"
                 class={`u u--${piece.colour} finding__text`}
                 aria-expanded={open === i}
-                aria-label={`${CATEGORY_NAMES[piece.category] ?? 'Sensitive'}: ${piece.text}`}
-                onClick={() => setOpen(open === i ? null : i)}
+                aria-label={`${name}: ${piece.text}`}
+                onClick={() => (open === i ? close() : (close(), setOpen(i)))}
               >
                 {piece.text}
               </button>
               {open === i && (
-                <span class="card" role="dialog" aria-label={`${CATEGORY_NAMES[piece.category] ?? 'Sensitive'} found`}>
-                  <span class="card__top">
-                    <span class={`card__cat u u--${piece.colour}`}>{CATEGORY_NAMES[piece.category] ?? 'Sensitive'}</span>
+                <span class={`card card--${piece.colour}`} role="dialog" aria-label={`${name} found`}>
+                  <span class="card__label">
+                    <span class="card__name">{name}</span>
                     <span class="mono card__value">{piece.text}</span>
-                    <span class="stamp mono">hide as {placeholders[i]}</span>
+                    <span class="mono card__stamp">hide as {placeholders[i]}</span>
                   </span>
-                  <span class="card__actions">
-                    <button type="button" class="btn btn--sm" onClick={() => hide([i])}>
-                      Hide
-                    </button>
-                    <button type="button" class="btn-clear btn--sm" disabled title="Rephrase rewrites the sentence with an AI model on this computer. Try it in a chat.">
-                      Rephrase
-                    </button>
-                    <button type="button" class="text-btn btn--sm" onClick={() => ignore(i)}>
-                      Ignore
-                    </button>
-                  </span>
+                  <span class="card__tear" />
+                  {r && (
+                    <span class="card__rephrase">
+                      {r.state === 'waiting' && (
+                        <span class="card__status" role="status">
+                          Rephrasing…
+                        </span>
+                      )}
+                      {r.state === 'failed' && (
+                        <span class="card__status card__status--failed" role="status">
+                          {r.message}
+                        </span>
+                      )}
+                      {r.state === 'preview' && (
+                        <>
+                          <span class="card__preview">{r.text}</span>
+                          <span class="card__actions card__actions--decide">
+                            <button type="button" class="btn btn--card" onClick={accept}>
+                              Accept
+                            </button>
+                            <button type="button" class="text-btn btn--card" onClick={() => setRephrasing(null)}>
+                              Reject
+                            </button>
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  )}
+                  {(!r || r.state === 'failed') && (
+                    <span class="card__actions">
+                      <button type="button" class="btn btn--card" onClick={() => hide([i])}>
+                        Hide
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-clear btn--card"
+                        disabled={rephraseOff !== null}
+                        aria-describedby={rephraseOff ? `rephrase-off-${i}` : undefined}
+                        onClick={() => rephrase(i)}
+                      >
+                        Rephrase
+                      </button>
+                      <button type="button" class="text-btn btn--card" onClick={() => ignore(i)}>
+                        Ignore
+                      </button>
+                    </span>
+                  )}
+                  {rephraseOff && !r && (
+                    <span id={`rephrase-off-${i}`} class="card__note">
+                      {rephraseOff}
+                    </span>
+                  )}
                 </span>
               )}
             </span>
@@ -694,51 +774,14 @@ function Field({ text, findings }: { text: string; findings: Finding[] }) {
         })}
       </p>
 
-      <div class="bar-wrap">
-        {menu && (
-          <div class="bar-menu" role="menu">
-            <button type="button" role="menuitem" class="menu-item" disabled={left.length === 0} onClick={() => hide(left)}>
-              Hide all <span class="mono">{left.length}</span>
-            </button>
-            <button type="button" role="menuitem" class="menu-item" disabled={left.length === 0} onClick={ignoreAll}>
-              Ignore all <span class="mono">{left.length}</span>
-            </button>
-          </div>
-        )}
-        {touched && (
-          <span class="bar-hint hint">
-            In a chat, Ctrl+Z puts a hidden value back.{' '}
-            <button type="button" class="link-btn" onClick={reset}>
-              Start over
-            </button>
-          </span>
-        )}
-        {left.length > 0 && (
-          <button
-            type="button"
-            class={menu ? 'ghost-bar ghost-bar--open' : 'ghost-bar'}
-            aria-expanded={menu}
-            onClick={() => setMenu(!menu)}
-          >
-            <span class="mono ghost-bar__count">{left.length}</span> to check
+      {touched && (
+        <p class="hint">
+          In a chat, Ctrl+Z puts a hidden value back.{' '}
+          <button type="button" class="link-btn" onClick={reset}>
+            Start over
           </button>
-        )}
-      </div>
-
-      <dl class="explain">
-        <div>
-          <dt>Hide</dt>
-          <dd>Swaps the value for a Placeholder like <span class="mono">[PERSON_1]</span>. The AI never sees the real value.</dd>
-        </div>
-        <div>
-          <dt>Rephrase</dt>
-          <dd>Rewrites the sentence in general terms with an AI model on this computer: "Kari, 34" becomes "a woman in her thirties".</dd>
-        </div>
-        <div>
-          <dt>Ignore</dt>
-          <dd>Stops underlining this value until you send the message.</dd>
-        </div>
-      </dl>
+        </p>
+      )}
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { sites } from './popup-settings';
 import {
   SAMPLE_FINDINGS,
   SAMPLE_TEXT,
-  domainCard,
   featuredDomains,
   AI_CHAT_SITES,
   checkEverywhere,
@@ -39,11 +38,11 @@ describe('openOnboardingOnInstall', () => {
 });
 
 describe('splitByFindings', () => {
-  it('splits text into plain pieces and underlined Findings with their colour', () => {
+  it('splits text into plain pieces and underlined Findings, coloured by the group the Engine sends', () => {
     const findings = [
-      { start: 0, end: 4, category: 'person_name', confidence: 0.6 },
-      { start: 9, end: 17, category: 'health', confidence: 0.8 },
-      { start: 23, end: 34, category: 'fodselsnummer', confidence: 0.99 },
+      { start: 0, end: 4, category: 'person_name', confidence: 0.6, group: 'contact' },
+      { start: 9, end: 17, category: 'health', confidence: 0.8, group: 'domain' },
+      { start: 23, end: 34, category: 'fodselsnummer', confidence: 0.99, group: 'id' },
     ];
     expect(splitByFindings('Kari har diabetes, fnr 01019000083', findings)).toEqual([
       { text: 'Kari', category: 'person_name', colour: 'contact' },
@@ -51,6 +50,13 @@ describe('splitByFindings', () => {
       { text: 'diabetes', category: 'health', colour: 'domain' },
       { text: ', fnr ' },
       { text: '01019000083', category: 'fodselsnummer', colour: 'id' },
+    ]);
+  });
+
+  it('underlines a Finding from an older Engine without a group in teal', () => {
+    const findings = [{ start: 0, end: 4, category: 'person_name', confidence: 0.6 }];
+    expect(splitByFindings('Kari', findings)).toEqual([
+      { text: 'Kari', category: 'person_name', colour: 'domain' },
     ]);
   });
 });
@@ -67,57 +73,43 @@ describe('the sample text', () => {
       ['+47 912 34 567', 'contact'],
     ]);
   });
+
+  it('carries the prefix and Card name the Engine would send', () => {
+    expect(SAMPLE_FINDINGS.map(({ prefix, name }) => [prefix, name])).toEqual([
+      ['PERSON', 'Name'],
+      ['FNR', 'Fødselsnummer'],
+      ['HEALTH', 'Health'],
+      ['PHONE', 'Phone'],
+    ]);
+  });
 });
 
 describe('placeholdersFor', () => {
-  it('gives each value a Placeholder numbered per prefix, the same value the same one', () => {
+  const at = (text: string, value: string, prefix?: string, from = 0) => {
+    const start = text.indexOf(value, from);
+    return { start, end: start + value.length, category: 'x', confidence: 1, prefix };
+  };
+
+  it('gives each value the Placeholder Hide would give it, numbered per prefix from the Engine', () => {
+    const text = 'Kari, 01019000083, Ola, Kari';
     const findings = [
-      { value: 'Kari', category: 'person_name' },
-      { value: '01019000083', category: 'fodselsnummer' },
-      { value: 'Ola', category: 'person_name' },
-      { value: 'Kari', category: 'person_name' },
-      { value: 'Ullevål', category: 'custom' },
+      at(text, 'Kari', 'PERSON'),
+      at(text, '01019000083', 'FNR'),
+      at(text, 'Ola', 'PERSON'),
+      at(text, 'Kari', 'PERSON', 20),
     ];
-    expect(placeholdersFor(findings)).toEqual([
-      '[PERSON_1]',
-      '[FNR_1]',
-      '[PERSON_2]',
-      '[PERSON_1]',
-      '[DATA_1]',
-    ]);
-  });
-});
-
-describe('domainCard', () => {
-  it('describes a built-in Domain the onboarding knows', () => {
-    expect(domainCard('health')).toEqual({
-      title: 'Health',
-      about:
-        'Adds health words in Bokmål and English: diagnoses, medicines and terms like innlagt and sykemeldt.',
-      example: 'diabetes · sykemeldt · insulin',
-    });
+    expect(placeholdersFor(text, findings)).toEqual(['[PERSON_1]', '[FNR_1]', '[PERSON_2]', '[PERSON_1]']);
   });
 
-  it('still describes a built-in Domain added later, by its name', () => {
-    expect(domainCard('harbour_logistics')).toEqual({
-      title: 'Harbour logistics',
-      about: 'Adds the Harbour logistics word list, plus the Base checks.',
-    });
+  it('gives one person one Placeholder, full name or not', () => {
+    const text = 'Kari Nordmann ringte. Kari kommer i morgen.';
+    const findings = [at(text, 'Kari Nordmann', 'PERSON'), at(text, 'Kari', 'PERSON', 20)];
+    expect(placeholdersFor(text, findings)).toEqual(['[PERSON_1]', '[PERSON_1]']);
   });
-});
 
-describe('placeholdersFor with the new Domains', () => {
-  it('uses the Placeholder prefixes from the Categories table', () => {
-    const values = ['education', 'courts', 'industrial', 'religious'].map((category) => ({
-      value: 'x',
-      category,
-    }));
-    expect(placeholdersFor(values)).toEqual([
-      '[EDUCATION_1]',
-      '[COURTS_1]',
-      '[INDUSTRIAL_1]',
-      '[RELIGIOUS_1]',
-    ]);
+  it('falls back to DATA when an older Engine sends no prefix', () => {
+    const text = 'Ullevål';
+    expect(placeholdersFor(text, [at(text, 'Ullevål')])).toEqual(['[DATA_1]']);
   });
 });
 
