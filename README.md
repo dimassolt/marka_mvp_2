@@ -15,7 +15,7 @@ First time on a new machine, from the repo folder:
 - macOS or Linux: `./scripts/install.sh`
 - Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File scripts\install.ps1`
 
-The script installs uv if it is missing, the Engine's Python packages, the GLiNER model (about 600 MB, downloaded once) and the Extension's npm packages, then runs the Engine tests. It needs Node 22 or newer. On Windows it also needs Rust from [rustup.rs](https://rustup.rs), because the GLiNER runtime is built from source there. If the model is missing later, the popup offers a **Download model** button that does the same download through the Engine.
+The script installs uv if it is missing, the Engine's Python packages (the first run builds llama-cpp-python, which takes a few minutes), the GLiNER model (about 600 MB) and the rephrase model (Gemma 4 E2B, about 3.1 GB), both downloaded once, and the Extension's npm packages, then runs the Engine tests. It needs Node 22 or newer. On Windows it also needs Rust from [rustup.rs](https://rustup.rs), because the GLiNER runtime is built from source there. If the model is missing later, the popup offers a **Download model** button that does the same download through the Engine.
 
 Then start both with `make start` (macOS or Linux) or `powershell -ExecutionPolicy Bypass -File scripts\start.ps1` (Windows, which has no make). Ctrl+C stops both. Or run `uv run ghost-engine` in `engine/` and `npm run dev` in `extension/`.
 
@@ -52,7 +52,7 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
                  └──────────────┬───────────────────────────┘
                      Engine (Python, uv + FastAPI)
               ports: Detector, Rephraser   (hexagonal)
-   adapters: Regex · First-name list · Health keywords · GLiNER · Qwen
+   adapters: Regex · First-name list · Keyword lists · GLiNER · Gemma 4 E2B
 ```
 
 ## Scope
@@ -61,7 +61,7 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
 - the Base and Health Detectors, plus the overlap rule
 - underlines, the Card, the Ghost bar, also in a `<textarea>` through an overlay (ChatGPT's input is one)
 - Hide, Hide all, Ignore, Ignore all, the Vault
-- Rephrase with Qwen
+- Rephrase with Gemma 4 E2B ([ADR-0005](docs/adr/0005-gemma-4-rephrases-and-code-checks-it.md))
 - Restore on ChatGPT while the answer streams in
 - GLiNER Detector
 - Restore on Claude
@@ -73,7 +73,7 @@ Extension (Chromium MV3, WXT + TypeScript)        App (desktop, if time allows)
 
 **Later:**
 - the desktop App
-- unloading Qwen when idle
+- unloading the rephrase model when idle
 - a warning before Send
 - more Domains
 

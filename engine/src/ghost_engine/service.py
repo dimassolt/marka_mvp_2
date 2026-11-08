@@ -41,6 +41,12 @@ class UnknownDomainError(ValueError):
     """The requested Domain has no Detectors."""
 
 
+def check_domain(domain: str) -> None:
+    """Raises UnknownDomainError for a Domain the Engine doesn't know."""
+    if domain not in DOMAIN_DETECTORS:
+        raise UnknownDomainError(domain)
+
+
 def detect(text: str, domain: str, words: Sequence[str] = ()) -> list[Finding]:
     """Findings sorted by start, never overlapping, positions in UTF-16 units.
 
@@ -48,8 +54,7 @@ def detect(text: str, domain: str, words: Sequence[str] = ()) -> list[Finding]:
 
     `words` are the user's own words (keyword syntax), found as Category "custom".
     """
-    if domain not in DOMAIN_DETECTORS:
-        raise UnknownDomainError(domain)
+    check_domain(domain)
     detectors = (*BASE_DETECTORS, *DOMAIN_DETECTORS[domain]())
     # An empty or all-"*" entry would match the empty string everywhere.
     words = [w for w in words if w.strip("* ")]

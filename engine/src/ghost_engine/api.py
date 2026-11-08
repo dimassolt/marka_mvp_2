@@ -8,6 +8,13 @@ from pydantic import BaseModel
 from ghost_engine import service
 from ghost_engine.findings import category_info
 from ghost_engine.model_download import ModelDownload, State, gliner_download
+from ghost_engine.rephrase import (
+    RephraseFailedError,
+    RephraseInputError,
+    RephraseModelMissingError,
+    Rephraser,
+)
+from ghost_engine.rephrase_model import rephraser as default_rephraser
 
 app = FastAPI(title="Ghost Agent Engine")
 
@@ -92,3 +99,37 @@ def start_model_download(
         raise HTTPException(status_code=403, detail="only the Extension can start the download")
     status = model.start()
     return ModelOut(state=status.state, downloaded_mb=status.downloaded_mb, error=status.error)
+
+
+# Rephrase (docs/spec.md §2) -------------------------------------------------------------
+
+
+class RephraseRequest(BaseModel):
+    sentence: str
+    domain: str = service.DEFAULT_DOMAIN
+    words: list[str] = []
+
+
+class RephraseResponse(BaseModel):
+    text: str
+
+
+def rephraser() -> Rephraser:
+    return default_rephraser()
+
+
+RephraserDep = Annotated[Rephraser, Depends(rephraser)]
+
+
+@app.post("/rephrase")
+def rephrase(request: RephraseRequest, rephraser: RephraserDep) -> RephraseResponse:
+    try:
+        text = rephraser.rephrase(request.sentence, request.domain, request.words)
+    except (RephraseInputError, service.UnknownDomainError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
+    except RephraseModelMissingError:
+        raise HTTPException(status_code=503, detail="rephrase model missing") from None
+    except RephraseFailedError:
+        # Every attempt still revealed something. The Card suggests Hide instead.
+        raise HTTPException(status_code=409, detail="could not rephrase safely") from None
+    return RephraseResponse(text=text)

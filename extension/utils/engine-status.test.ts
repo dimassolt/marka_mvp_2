@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { checkEngine, detect, engineRunning, iconPathsFor } from './engine-status';
+import { checkEngine, detect, engineRunning, iconPathsFor, rephrase } from './engine-status';
 import { customDomains, selectedDomain } from './popup-settings';
 
 describe('iconPathsFor', () => {
@@ -160,5 +160,79 @@ describe('detect', () => {
     await detect('Kari');
 
     expect(await engineRunning.getValue()).toBe(true);
+  });
+});
+
+describe('rephrase', () => {
+  beforeEach(() => fakeBrowser.reset());
+  afterEach(() => vi.unstubAllGlobals());
+
+  const sentence = 'Kari, 34 år, jobber som lærer i Bærum og har diabetes type 1.';
+  const text = 'En kvinne i 30-årene som jobber i skolen, har en kronisk sykdom.';
+
+  it('sends the sentence and the selected Domain to POST /rephrase', async () => {
+    await selectedDomain.setValue('health');
+    const fetch = vi.fn().mockResolvedValue(Response.json({ text }));
+    vi.stubGlobal('fetch', fetch);
+
+    expect(await rephrase(sentence)).toEqual({ ok: true, text });
+    const [url, init] = fetch.mock.calls[0]!;
+    expect(url).toBe('http://127.0.0.1:8765/rephrase');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ sentence, domain: 'health' });
+  });
+
+  it("sends one of the user's own Domains as Free with its words", async () => {
+    await customDomains.setValue({ Prosjekt: ['ullevål'] });
+    await selectedDomain.setValue('Prosjekt');
+    const fetch = vi.fn().mockResolvedValue(Response.json({ text: 'Møte på et sykehus.' }));
+    vi.stubGlobal('fetch', fetch);
+
+    await rephrase('Møte på Ullevål.');
+
+    expect(JSON.parse(fetch.mock.calls[0]![1].body)).toEqual({
+      sentence: 'Møte på Ullevål.',
+      domain: 'free',
+      words: ['ullevål'],
+    });
+  });
+
+  it('gives up after 15 seconds (docs/spec.md §3)', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ text }));
+    vi.stubGlobal('fetch', fetch);
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+
+    await rephrase(sentence);
+
+    expect(timeout).toHaveBeenCalledWith(15_000);
+    expect(fetch.mock.calls[0]![1].signal).toBe(timeout.mock.results[0]!.value);
+  });
+
+  it.each([
+    [503, 'model-missing'],
+    [409, 'unsafe'],
+    [422, 'failed'],
+    [500, 'failed'],
+  ])('reports status %i as %s', async (status, reason) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ detail: 'x' }, { status })));
+
+    expect(await rephrase(sentence)).toEqual({ ok: false, reason });
+  });
+
+  it('reports a slow Engine as a timeout, still running', async () => {
+    await engineRunning.setValue(true);
+    const slow = new DOMException('signal timed out', 'TimeoutError');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(slow));
+
+    expect(await rephrase(sentence)).toEqual({ ok: false, reason: 'timeout' });
+    expect(await engineRunning.getValue()).toBe(true);
+  });
+
+  it('marks the Engine down when the request fails', async () => {
+    await engineRunning.setValue(true);
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    expect(await rephrase(sentence)).toEqual({ ok: false, reason: 'engine-down' });
+    expect(await engineRunning.getValue()).toBe(false);
   });
 });

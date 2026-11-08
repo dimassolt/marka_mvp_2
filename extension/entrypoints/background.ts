@@ -1,10 +1,11 @@
-import { checkEngine, detect, iconPathsFor } from '@/utils/engine-status';
+import { checkEngine, detect, iconPathsFor, rephrase } from '@/utils/engine-status';
 import { remember, type Vault } from '@/utils/vault';
 
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender) => {
     // Content scripts can't reach the Engine on localhost, so they ask here (docs/spec.md §3).
     if (message?.type === 'detect') return detect(message.text);
+    if (message?.type === 'rephrase') return rephrase(message.sentence);
     // Each tab's icon comes from its page; tabs without one keep the default, no sunglasses.
     if (message?.type === 'icon' && sender.tab?.id !== undefined) {
       browser.action.setIcon({ tabId: sender.tab.id, path: iconPathsFor(message.on) });

@@ -1,4 +1,4 @@
-# First-time setup on Windows: Engine dependencies, the GLiNER model, the Extension.
+# First-time setup on Windows: Engine dependencies, the models, the Extension.
 # Run in PowerShell from the repo folder:
 #   powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 # Safe to run again; it skips what is done.
@@ -49,6 +49,9 @@ Run "engine" "uv" @("sync")
 
 Step "Engine: GLiNER model (about 600 MB, downloaded once)"
 Run "engine" "uv" @("run", "python", "scripts/fetch_gliner.py")
+
+Step "Engine: rephrase model, Gemma 4 E2B (about 3.1 GB, downloaded once)"
+Run "engine" "uv" @("run", "python", "scripts/fetch_rephrase_model.py")
 
 Step "Extension: npm packages"
 Run "extension" "npm" @("install")

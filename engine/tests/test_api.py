@@ -4,8 +4,14 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from ghost_engine.api import app, model_download
+from ghost_engine import service
+from ghost_engine.api import app, model_download, rephraser
 from ghost_engine.model_download import ModelDownload
+from ghost_engine.rephrase import (
+    RephraseFailedError,
+    RephraseInputError,
+    RephraseModelMissingError,
+)
 
 client = TestClient(app)
 
@@ -147,3 +153,65 @@ def test_a_web_page_may_not_start_the_download(model: ModelDownload) -> None:
 
     assert response.status_code == 403
     assert model.status().state == "missing"
+
+
+# POST /rephrase -------------------------------------------------------------------------
+
+
+class FakeRephraser:
+    def __init__(self, result: str | Exception) -> None:
+        self.result = result
+        self.calls: list[tuple[str, str, list[str]]] = []
+
+    def rephrase(self, sentence: str, domain: str, words: list[str]) -> str:
+        self.calls.append((sentence, domain, list(words)))
+        if isinstance(self.result, Exception):
+            raise self.result
+        return self.result
+
+
+@pytest.fixture
+def fake_rephraser() -> Iterator[FakeRephraser]:
+    fake = FakeRephraser("En kvinne i 30-årene har en kronisk sykdom.")
+    app.dependency_overrides[rephraser] = lambda: fake
+    yield fake
+    app.dependency_overrides.pop(rephraser)
+
+
+def test_rephrase_returns_the_text_in_spec_shape(fake_rephraser: FakeRephraser) -> None:
+    sentence = "Kari, 34 år, jobber som lærer i Bærum og har diabetes type 1."
+
+    response = client.post("/rephrase", json={"sentence": sentence, "domain": "health"})
+
+    assert (response.status_code, response.json()) == (
+        200,
+        {"text": "En kvinne i 30-årene har en kronisk sykdom."},
+    )
+    assert fake_rephraser.calls == [(sentence, "health", [])]
+
+
+def test_rephrase_defaults_to_the_free_domain_and_passes_words(
+    fake_rephraser: FakeRephraser,
+) -> None:
+    client.post("/rephrase", json={"sentence": "Møte på Ullevål.", "words": ["ullevål"]})
+
+    assert fake_rephraser.calls == [("Møte på Ullevål.", "free", ["ullevål"])]
+
+
+@pytest.mark.parametrize(
+    ("error", "status"),
+    [
+        (RephraseInputError("too long"), 422),
+        (service.UnknownDomainError("legal"), 422),
+        (RephraseModelMissingError("not downloaded"), 503),
+        (RephraseFailedError("unsafe"), 409),
+    ],
+)
+def test_rephrase_errors_map_to_status_codes(
+    fake_rephraser: FakeRephraser, error: Exception, status: int
+) -> None:
+    fake_rephraser.result = error
+
+    response = client.post("/rephrase", json={"sentence": "Kari har diabetes."})
+
+    assert response.status_code == status
