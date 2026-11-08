@@ -19,7 +19,7 @@ This table is the contract between Engine and Extension. The Engine returns the 
 | `password` | Base | `PASSWORD` | red | the value after `password:`, `passord:`, `pwd:` or `pw:` (the label itself is not part of the Finding) |
 | `email` | Base | `EMAIL` | orange | an email address |
 | `phone` | Base | `PHONE` | orange | Norwegian 8-digit number with optional `+47`/`0047`, or an international `+` number |
-| `person_name` | Base | `PERSON` | orange | a capitalised word on the SSB first-name list, or a person the GLiNER Detector finds (e.g. a full name) |
+| `person_name` | Base | `PERSON` | orange | a capitalised word on the SSB first-name list, or a person the GLiNER Detector finds (e.g. a full name); once a full name is found, each of its words and the whole name are names wherever else they stand (`Nordmann` alone, after `Ola Nordmann`) |
 | `organization` | Base | `ORG` | orange | an organisation the GLiNER Detector finds |
 | `location` | Base | `PLACE` | orange | a place the GLiNER Detector finds |
 | `health` | Domain (Health) | `HEALTH` | purple | a word or phrase on the Health keyword list (Bokmål and English): diagnoses, medicines, terms like "innlagt" and "sykemeldt" |
@@ -29,6 +29,8 @@ This table is the contract between Engine and Extension. The Engine returns the 
 | `religious` | Domain (Religious) | `RELIGIOUS` | purple | a word or phrase on the Religious keyword list (Bokmål and English): membership, pastoral care, ceremonies, terms like "menighet" and "sjelesorg" |
 
 A Category `id` the Extension doesn't know is drawn purple, and Hide gives it the Placeholder prefix `DATA`.
+
+Nothing inside a Placeholder (`[PERSON_1]`, `[EMAIL_2]`) is ever a Finding: the value it stands for is already hidden.
 
 The GLiNER Detector runs `onnx-community/gliner_multi-v2.1` (fp16 ONNX, through fast_gliner) on chunks of whole sentences, at most 1000 characters each. It keeps an entity only if it scores at least 0.8, contains a capital letter and isn't a pronoun (`Hun`, `henne`). Its `confidence` is 0.5, so for Findings of equal length the list and regex Detectors win. The model is loaded from `engine/models/` on the first `/detect` call. Until it is downloaded the GLiNER Detector finds nothing and the other Detectors still run; detection itself never downloads ([ADR-0004](adr/0004-model-download-on-request.md)).
 
@@ -116,6 +118,7 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 - Hide replaces this one occurrence with its Placeholder, using the editor's own insert command, so the site sees normal typing.
 - A Placeholder is `[<PREFIX>_<n>]`. `n` counts per prefix and starts at 1 in each tab.
 - The same value in the same tab always gets the same Placeholder, in this message and later ones. This keeps Restore consistent across a conversation.
+- A person keeps one Placeholder however the name is written: `Ola`, `Nordmann` and `Ola Nordmann` all get `[PERSON_1]`, and the Vault keeps the longest form (`Ola Nordmann`). A short name that fits two people in the Vault (`Ola`, with `Ola Nordmann` and `Ola Hansen`) gets a new Placeholder.
 - The Vault holds `Placeholder → original value` per tab in `chrome.storage.session`: memory only, never on disk, cleared when the browser closes.
 
 ### Ghost bar
@@ -172,7 +175,7 @@ Every check below uses the demo note in section 5, typed or pasted into ChatGPT'
 | 4 | after check 3 | the user clicks Undo | the field reads `fnr 01019000083` again, red, and the Ghost bar shows 9 |
 | 5 | the note is underlined | the user clicks Ignore on `Kari` (the one after `fnr`) | that `Kari` is no longer underlined, `Kari Nordmann` still is, and the Ghost bar shows 8 |
 | 6 | the note is underlined | the user clicks Rephrase on `diabetes` | within 15 s the Card shows a Norwegian sentence without the name, age or diagnosis; Accept replaces the sentence |
-| 7 | the note is underlined | the user clicks Hide all | every underlined value is replaced, the same value with the same Placeholder (`Kari Nordmann` → `[PERSON_1]`, `Kari` → `[PERSON_2]`), and the Ghost bar disappears |
+| 7 | the note is underlined | the user clicks Hide all | every underlined value is replaced, the same person with the same Placeholder (`Kari Nordmann` and `Kari` → `[PERSON_1]`), and the Ghost bar disappears |
 | 8 | after check 7 | the user sends, and ChatGPT answers with `[PERSON_1]` | the answer shows "Kari Nordmann" with a dotted underline, and so does the user's own sent message |
 | 9 | the Engine is stopped | the user types in the field | nothing is underlined, the icon shows a red `!`, and the popup says "Start Ghost Agent engine" |
 | 10 | the text `ordrenummer 01019000084` (checksum fails) | it is scanned | nothing is underlined |
@@ -188,4 +191,4 @@ The test text for every check and for the live demo. The fødselsnummer is synth
 ## 6. Known limits
 
 - Restore changes only what is shown on screen. ChatGPT's copy button copies its saved answer, which still contains Placeholders.
-- The GLiNER Detector finds most names, organisations and places, not all. A title before a name (`Dommer Ingrid Solheim`) becomes part of the Finding. Street addresses are not a Category.
+- The GLiNER Detector finds most names, organisations and places, not all. A title before a name (`Dommer Ingrid Solheim`) becomes part of the Finding. Its repeats then include the title too: `Dommer` alone is underlined elsewhere in the text. Street addresses are not a Category.

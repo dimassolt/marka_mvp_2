@@ -13,7 +13,9 @@ from ghost_engine.detectors.industrial import industrial_detector
 from ghost_engine.detectors.keywords import KeywordDetector
 from ghost_engine.detectors.religious import religious_detector
 from ghost_engine.findings import Finding, resolve_overlaps
+from ghost_engine.name_repeats import name_repeats
 from ghost_engine.offsets import Utf16Offsets
+from ghost_engine.placeholders import outside_placeholders
 from ghost_engine.ports import Detector
 
 DEFAULT_DOMAIN = "free"
@@ -42,6 +44,8 @@ class UnknownDomainError(ValueError):
 def detect(text: str, domain: str, words: Sequence[str] = ()) -> list[Finding]:
     """Findings sorted by start, never overlapping, positions in UTF-16 units.
 
+    Nothing inside a Placeholder like `[PERSON_1]` is a Finding.
+
     `words` are the user's own words (keyword syntax), found as Category "custom".
     """
     if domain not in DOMAIN_DETECTORS:
@@ -51,7 +55,13 @@ def detect(text: str, domain: str, words: Sequence[str] = ()) -> list[Finding]:
     words = [w for w in words if w.strip("* ")]
     if words:
         detectors = (*detectors, KeywordDetector(words, category="custom", confidence=0.8))
-    findings = resolve_overlaps(f for d in detectors for f in d.detect(text))
+    found = (f for d in detectors for f in d.detect(text))
+    findings = resolve_overlaps(outside_placeholders(text, found))
+    # A found full name also marks its surname or first name alone, anywhere in the text.
+    findings = sorted(
+        [*findings, *outside_placeholders(text, name_repeats(text, findings))],
+        key=lambda f: f.start,
+    )
     offsets = Utf16Offsets(text)
     return [
         replace(f, start=offsets.convert(f.start), end=offsets.convert(f.end)) for f in findings

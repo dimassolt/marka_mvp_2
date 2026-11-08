@@ -1,0 +1,850 @@
+[
+  {
+    "id": "01-contact",
+    "title": "Name, phone and email",
+    "shows": "Base checks on the Free Domain. The first name alone is found again.",
+    "domain": "free",
+    "text": "Hei! Jeg heter Ingrid Solberg. Ring meg på 912 34 567 eller skriv til ingrid.solberg@example.com. Ingrid svarer etter klokken 16.",
+    "findings": [
+      {
+        "value": "Ingrid Solberg",
+        "start": 15,
+        "end": 29,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "912 34 567",
+        "start": 43,
+        "end": 53,
+        "category": "phone",
+        "prefix": "PHONE",
+        "group": "contact",
+        "placeholder": "[PHONE_1]"
+      },
+      {
+        "value": "ingrid.solberg@example.com",
+        "start": 70,
+        "end": 96,
+        "category": "email",
+        "prefix": "EMAIL",
+        "group": "contact",
+        "placeholder": "[EMAIL_1]"
+      },
+      {
+        "value": "Ingrid",
+        "start": 98,
+        "end": 104,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      }
+    ],
+    "ghost_bar": 4,
+    "after_hide_all": "Hei! Jeg heter [PERSON_1]. Ring meg på [PHONE_1] eller skriv til [EMAIL_1]. [PERSON_1] svarer etter klokken 16.",
+    "vault": {
+      "[PERSON_1]": "Ingrid Solberg",
+      "[PHONE_1]": "912 34 567",
+      "[EMAIL_1]": "ingrid.solberg@example.com"
+    }
+  },
+  {
+    "id": "02-ids",
+    "title": "Bank account, fødselsnummer and card",
+    "shows": "Checksums: mod-11 for account and fnr, Luhn for the card. Red underlines.",
+    "domain": "free",
+    "text": "Lønnen går til konto 8601.11.17947. Fødselsnummeret mitt er 010190 00083, og kortet er 4111 1111 1111 1111.",
+    "findings": [
+      {
+        "value": "8601.11.17947",
+        "start": 21,
+        "end": 34,
+        "category": "bank_account",
+        "prefix": "ACCOUNT",
+        "group": "id",
+        "placeholder": "[ACCOUNT_1]"
+      },
+      {
+        "value": "010190 00083",
+        "start": 60,
+        "end": 72,
+        "category": "fodselsnummer",
+        "prefix": "FNR",
+        "group": "id",
+        "placeholder": "[FNR_1]"
+      },
+      {
+        "value": "4111 1111 1111 1111",
+        "start": 87,
+        "end": 106,
+        "category": "payment_card",
+        "prefix": "CARD",
+        "group": "id",
+        "placeholder": "[CARD_1]"
+      }
+    ],
+    "ghost_bar": 3,
+    "after_hide_all": "Lønnen går til konto [ACCOUNT_1]. Fødselsnummeret mitt er [FNR_1], og kortet er [CARD_1].",
+    "vault": {
+      "[ACCOUNT_1]": "8601.11.17947",
+      "[FNR_1]": "010190 00083",
+      "[CARD_1]": "4111 1111 1111 1111"
+    }
+  },
+  {
+    "id": "03-iban-password",
+    "title": "IBAN and password",
+    "shows": "IBAN with mod-97. Only the value after the label is the password.",
+    "domain": "free",
+    "text": "Betal til IBAN NO93 8601 1117 947 innen fredag. Passord: Sommer2026",
+    "findings": [
+      {
+        "value": "NO93 8601 1117 947",
+        "start": 15,
+        "end": 33,
+        "category": "iban",
+        "prefix": "IBAN",
+        "group": "id",
+        "placeholder": "[IBAN_1]"
+      },
+      {
+        "value": "Sommer2026",
+        "start": 57,
+        "end": 67,
+        "category": "password",
+        "prefix": "PASSWORD",
+        "group": "id",
+        "placeholder": "[PASSWORD_1]"
+      }
+    ],
+    "ghost_bar": 2,
+    "after_hide_all": "Betal til IBAN [IBAN_1] innen fredag. Passord: [PASSWORD_1]",
+    "vault": {
+      "[IBAN_1]": "NO93 8601 1117 947",
+      "[PASSWORD_1]": "Sommer2026"
+    }
+  },
+  {
+    "id": "04-same-person",
+    "title": "One person, three spellings",
+    "shows": "Full name, first name and surname all get [PERSON_1].",
+    "domain": "free",
+    "text": "Ola Nordmann er syk i dag. Ola kommer tilbake på mandag. Ring Nordmann hvis det haster.",
+    "findings": [
+      {
+        "value": "Ola Nordmann",
+        "start": 0,
+        "end": 12,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "Ola",
+        "start": 27,
+        "end": 30,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "Nordmann",
+        "start": 62,
+        "end": 70,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      }
+    ],
+    "ghost_bar": 3,
+    "after_hide_all": "[PERSON_1] er syk i dag. [PERSON_1] kommer tilbake på mandag. Ring [PERSON_1] hvis det haster.",
+    "vault": {
+      "[PERSON_1]": "Ola Nordmann"
+    }
+  },
+  {
+    "id": "05-two-people",
+    "title": "Two people with the same first name",
+    "shows": "Ola Nordmann and Ola Hansen stay apart. Each surname follows its own person.",
+    "domain": "free",
+    "text": "Ola Nordmann og Ola Hansen var på møtet. Hansen tok notater, og Nordmann ledet.",
+    "findings": [
+      {
+        "value": "Ola Nordmann",
+        "start": 0,
+        "end": 12,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "Ola Hansen",
+        "start": 16,
+        "end": 26,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_2]"
+      },
+      {
+        "value": "Hansen",
+        "start": 41,
+        "end": 47,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_2]"
+      },
+      {
+        "value": "Nordmann",
+        "start": 64,
+        "end": 72,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      }
+    ],
+    "ghost_bar": 4,
+    "after_hide_all": "[PERSON_1] og [PERSON_2] var på møtet. [PERSON_2] tok notater, og [PERSON_1] ledet.",
+    "vault": {
+      "[PERSON_1]": "Ola Nordmann",
+      "[PERSON_2]": "Ola Hansen"
+    }
+  },
+  {
+    "id": "06-placeholders",
+    "title": "Text that is already hidden",
+    "shows": "Placeholders are never underlined again. Zero Findings.",
+    "domain": "free",
+    "text": "Send rapporten fra [PERSON_1] til [EMAIL_1] før fredag. [PERSON_1] er syk.",
+    "findings": [],
+    "ghost_bar": 0,
+    "after_hide_all": "Send rapporten fra [PERSON_1] til [EMAIL_1] før fredag. [PERSON_1] er syk.",
+    "vault": {}
+  },
+  {
+    "id": "07-health-demo-note",
+    "title": "Health: the demo note",
+    "shows": "docs/spec.md §5. Ghost bar shows 9. Bærum is a place.",
+    "domain": "health",
+    "text": "Hei! Kan du hjelpe meg å skrive et henvisningsbrev? Pasienten heter Kari Nordmann, fnr 01019000083. Kari, 34 år, jobber som lærer i Bærum og har diabetes type 1. Hun er sykemeldt og bruker insulin. Ring henne på +47 912 34 567 eller send e-post til kari.nordmann@example.com.",
+    "findings": [
+      {
+        "value": "Kari Nordmann",
+        "start": 68,
+        "end": 81,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "01019000083",
+        "start": 87,
+        "end": 98,
+        "category": "fodselsnummer",
+        "prefix": "FNR",
+        "group": "id",
+        "placeholder": "[FNR_1]"
+      },
+      {
+        "value": "Kari",
+        "start": 100,
+        "end": 104,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "Bærum",
+        "start": 132,
+        "end": 137,
+        "category": "location",
+        "prefix": "DATA",
+        "group": "domain",
+        "placeholder": "[DATA_1]"
+      },
+      {
+        "value": "diabetes",
+        "start": 145,
+        "end": 153,
+        "category": "health",
+        "prefix": "HEALTH",
+        "group": "domain",
+        "placeholder": "[HEALTH_1]"
+      },
+      {
+        "value": "sykemeldt",
+        "start": 169,
+        "end": 178,
+        "category": "health",
+        "prefix": "HEALTH",
+        "group": "domain",
+        "placeholder": "[HEALTH_2]"
+      },
+      {
+        "value": "insulin",
+        "start": 189,
+        "end": 196,
+        "category": "health",
+        "prefix": "HEALTH",
+        "group": "domain",
+        "placeholder": "[HEALTH_3]"
+      },
+      {
+        "value": "+47 912 34 567",
+        "start": 212,
+        "end": 226,
+        "category": "phone",
+        "prefix": "PHONE",
+        "group": "contact",
+        "placeholder": "[PHONE_1]"
+      },
+      {
+        "value": "kari.nordmann@example.com",
+        "start": 249,
+        "end": 274,
+        "category": "email",
+        "prefix": "EMAIL",
+        "group": "contact",
+        "placeholder": "[EMAIL_1]"
+      }
+    ],
+    "ghost_bar": 9,
+    "after_hide_all": "Hei! Kan du hjelpe meg å skrive et henvisningsbrev? Pasienten heter [PERSON_1], fnr [FNR_1]. [PERSON_1], 34 år, jobber som lærer i [DATA_1] og har [HEALTH_1] type 1. Hun er [HEALTH_2] og bruker [HEALTH_3]. Ring henne på [PHONE_1] eller send e-post til [EMAIL_1].",
+    "vault": {
+      "[PERSON_1]": "Kari Nordmann",
+      "[FNR_1]": "01019000083",
+      "[DATA_1]": "Bærum",
+      "[HEALTH_1]": "diabetes",
+      "[HEALTH_2]": "sykemeldt",
+      "[HEALTH_3]": "insulin",
+      "[PHONE_1]": "+47 912 34 567",
+      "[EMAIL_1]": "kari.nordmann@example.com"
+    }
+  },
+  {
+    "id": "08-health-english",
+    "title": "Health in English",
+    "shows": "English health words, an international phone number, two people.",
+    "domain": "health",
+    "text": "Sarah Johnson saw John Peterson today. John has type 2 diabetes and is on sick leave. Call him at +44 20 7946 0958.",
+    "findings": [
+      {
+        "value": "Sarah Johnson",
+        "start": 0,
+        "end": 13,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "John Peterson",
+        "start": 18,
+        "end": 31,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_2]"
+      },
+      {
+        "value": "John",
+        "start": 39,
+        "end": 43,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_2]"
+      },
+      {
+        "value": "diabetes",
+        "start": 55,
+        "end": 63,
+        "category": "health",
+        "prefix": "HEALTH",
+        "group": "domain",
+        "placeholder": "[HEALTH_1]"
+      },
+      {
+        "value": "sick leave",
+        "start": 74,
+        "end": 84,
+        "category": "health",
+        "prefix": "HEALTH",
+        "group": "domain",
+        "placeholder": "[HEALTH_2]"
+      },
+      {
+        "value": "+44 20 7946 0958",
+        "start": 98,
+        "end": 114,
+        "category": "phone",
+        "prefix": "PHONE",
+        "group": "contact",
+        "placeholder": "[PHONE_1]"
+      }
+    ],
+    "ghost_bar": 6,
+    "after_hide_all": "[PERSON_1] saw [PERSON_2] today. [PERSON_2] has type 2 [HEALTH_1] and is on [HEALTH_2]. Call him at [PHONE_1].",
+    "vault": {
+      "[PERSON_1]": "Sarah Johnson",
+      "[PERSON_2]": "John Peterson",
+      "[HEALTH_1]": "diabetes",
+      "[HEALTH_2]": "sick leave",
+      "[PHONE_1]": "+44 20 7946 0958"
+    }
+  },
+  {
+    "id": "09-education",
+    "title": "Education: one student",
+    "shows": "Special needs, absence and grades about a named student.",
+    "domain": "education",
+    "text": "Emma Berg i 9B har IOP og mye fravær. Hun fikk 2 i standpunkt i matte, og Berg har en sakkyndig vurdering fra PPT.",
+    "findings": [
+      {
+        "value": "Emma Berg",
+        "start": 0,
+        "end": 9,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "IOP",
+        "start": 19,
+        "end": 22,
+        "category": "education",
+        "prefix": "EDUCATION",
+        "group": "domain",
+        "placeholder": "[EDUCATION_1]"
+      },
+      {
+        "value": "fravær",
+        "start": 30,
+        "end": 36,
+        "category": "education",
+        "prefix": "EDUCATION",
+        "group": "domain",
+        "placeholder": "[EDUCATION_2]"
+      },
+      {
+        "value": "standpunkt",
+        "start": 51,
+        "end": 61,
+        "category": "education",
+        "prefix": "EDUCATION",
+        "group": "domain",
+        "placeholder": "[EDUCATION_3]"
+      },
+      {
+        "value": "Berg",
+        "start": 74,
+        "end": 78,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "sakkyndig vurdering",
+        "start": 86,
+        "end": 105,
+        "category": "education",
+        "prefix": "EDUCATION",
+        "group": "domain",
+        "placeholder": "[EDUCATION_4]"
+      },
+      {
+        "value": "PPT",
+        "start": 110,
+        "end": 113,
+        "category": "education",
+        "prefix": "EDUCATION",
+        "group": "domain",
+        "placeholder": "[EDUCATION_5]"
+      }
+    ],
+    "ghost_bar": 7,
+    "after_hide_all": "[PERSON_1] i 9B har [EDUCATION_1] og mye [EDUCATION_2]. Hun fikk 2 i [EDUCATION_3] i matte, og [PERSON_1] har en [EDUCATION_4] fra [EDUCATION_5].",
+    "vault": {
+      "[PERSON_1]": "Emma Berg",
+      "[EDUCATION_1]": "IOP",
+      "[EDUCATION_2]": "fravær",
+      "[EDUCATION_3]": "standpunkt",
+      "[EDUCATION_4]": "sakkyndig vurdering",
+      "[EDUCATION_5]": "PPT"
+    }
+  },
+  {
+    "id": "10-courts",
+    "title": "Courts: closed case",
+    "shows": "Closed hearing, a draft judgment not yet announced, a custody detail.",
+    "domain": "courts",
+    "text": "Saken mot Per Olsen går for lukkede dører. Utkast til dom er klart, men dommen er ikke avsagt. Olsen har samvær annenhver helg.",
+    "findings": [
+      {
+        "value": "Per Olsen",
+        "start": 10,
+        "end": 19,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "lukkede dører",
+        "start": 28,
+        "end": 41,
+        "category": "courts",
+        "prefix": "COURTS",
+        "group": "domain",
+        "placeholder": "[COURTS_1]"
+      },
+      {
+        "value": "Utkast til dom",
+        "start": 43,
+        "end": 57,
+        "category": "courts",
+        "prefix": "COURTS",
+        "group": "domain",
+        "placeholder": "[COURTS_2]"
+      },
+      {
+        "value": "ikke avsagt",
+        "start": 82,
+        "end": 93,
+        "category": "courts",
+        "prefix": "COURTS",
+        "group": "domain",
+        "placeholder": "[COURTS_3]"
+      },
+      {
+        "value": "Olsen",
+        "start": 95,
+        "end": 100,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "samvær",
+        "start": 105,
+        "end": 111,
+        "category": "courts",
+        "prefix": "COURTS",
+        "group": "domain",
+        "placeholder": "[COURTS_4]"
+      }
+    ],
+    "ghost_bar": 6,
+    "after_hide_all": "Saken mot [PERSON_1] går for [COURTS_1]. [COURTS_2] er klart, men dommen er [COURTS_3]. [PERSON_1] har [COURTS_4] annenhver helg.",
+    "vault": {
+      "[PERSON_1]": "Per Olsen",
+      "[COURTS_1]": "lukkede dører",
+      "[COURTS_2]": "Utkast til dom",
+      "[COURTS_3]": "ikke avsagt",
+      "[COURTS_4]": "samvær"
+    }
+  },
+  {
+    "id": "11-industrial",
+    "title": "Industrial: plant details",
+    "shows": "Machine makers, capacity, a site name and a contact.",
+    "domain": "industrial",
+    "text": "Linje 2 på Anlegg Nord har 14 Fanuc-roboter og to Trumpf-lasere. Kapasiteten er 2400 enheter per skift. Kontakt Lars Eriksen på 98765432.",
+    "findings": [
+      {
+        "value": "Anlegg Nord",
+        "start": 11,
+        "end": 22,
+        "category": "location",
+        "prefix": "DATA",
+        "group": "domain",
+        "placeholder": "[DATA_1]"
+      },
+      {
+        "value": "Fanuc",
+        "start": 30,
+        "end": 35,
+        "category": "industrial",
+        "prefix": "INDUSTRIAL",
+        "group": "domain",
+        "placeholder": "[INDUSTRIAL_1]"
+      },
+      {
+        "value": "Trumpf",
+        "start": 50,
+        "end": 56,
+        "category": "industrial",
+        "prefix": "INDUSTRIAL",
+        "group": "domain",
+        "placeholder": "[INDUSTRIAL_2]"
+      },
+      {
+        "value": "Kapasiteten",
+        "start": 65,
+        "end": 76,
+        "category": "industrial",
+        "prefix": "INDUSTRIAL",
+        "group": "domain",
+        "placeholder": "[INDUSTRIAL_3]"
+      },
+      {
+        "value": "enheter per skift",
+        "start": 85,
+        "end": 102,
+        "category": "industrial",
+        "prefix": "INDUSTRIAL",
+        "group": "domain",
+        "placeholder": "[INDUSTRIAL_4]"
+      },
+      {
+        "value": "Lars Eriksen",
+        "start": 112,
+        "end": 124,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "98765432",
+        "start": 128,
+        "end": 136,
+        "category": "phone",
+        "prefix": "PHONE",
+        "group": "contact",
+        "placeholder": "[PHONE_1]"
+      }
+    ],
+    "ghost_bar": 7,
+    "after_hide_all": "Linje 2 på [DATA_1] har 14 [INDUSTRIAL_1]-roboter og to [INDUSTRIAL_2]-lasere. [INDUSTRIAL_3] er 2400 [INDUSTRIAL_4]. Kontakt [PERSON_1] på [PHONE_1].",
+    "vault": {
+      "[DATA_1]": "Anlegg Nord",
+      "[INDUSTRIAL_1]": "Fanuc",
+      "[INDUSTRIAL_2]": "Trumpf",
+      "[INDUSTRIAL_3]": "Kapasiteten",
+      "[INDUSTRIAL_4]": "enheter per skift",
+      "[PERSON_1]": "Lars Eriksen",
+      "[PHONE_1]": "98765432"
+    }
+  },
+  {
+    "id": "12-religious",
+    "title": "Religious: pastoral care",
+    "shows": "Pastoral care and leaving the congregation, tied to a named person.",
+    "domain": "religious",
+    "text": "Kari Hansen kom til sjelesorg i går og vil melde seg ut av menigheten. Hansen ba om forbønn for familien.",
+    "findings": [
+      {
+        "value": "Kari Hansen",
+        "start": 0,
+        "end": 11,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "sjelesorg",
+        "start": 20,
+        "end": 29,
+        "category": "religious",
+        "prefix": "RELIGIOUS",
+        "group": "domain",
+        "placeholder": "[RELIGIOUS_1]"
+      },
+      {
+        "value": "melde seg ut",
+        "start": 43,
+        "end": 55,
+        "category": "religious",
+        "prefix": "RELIGIOUS",
+        "group": "domain",
+        "placeholder": "[RELIGIOUS_2]"
+      },
+      {
+        "value": "menigheten",
+        "start": 59,
+        "end": 69,
+        "category": "religious",
+        "prefix": "RELIGIOUS",
+        "group": "domain",
+        "placeholder": "[RELIGIOUS_3]"
+      },
+      {
+        "value": "Hansen",
+        "start": 71,
+        "end": 77,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      },
+      {
+        "value": "forbønn",
+        "start": 84,
+        "end": 91,
+        "category": "religious",
+        "prefix": "RELIGIOUS",
+        "group": "domain",
+        "placeholder": "[RELIGIOUS_4]"
+      }
+    ],
+    "ghost_bar": 6,
+    "after_hide_all": "[PERSON_1] kom til [RELIGIOUS_1] i går og vil [RELIGIOUS_2] av [RELIGIOUS_3]. [PERSON_1] ba om [RELIGIOUS_4] for familien.",
+    "vault": {
+      "[PERSON_1]": "Kari Hansen",
+      "[RELIGIOUS_1]": "sjelesorg",
+      "[RELIGIOUS_2]": "melde seg ut",
+      "[RELIGIOUS_3]": "menigheten",
+      "[RELIGIOUS_4]": "forbønn"
+    }
+  },
+  {
+    "id": "13-own-words",
+    "title": "Your own Domain",
+    "shows": "A Domain named Prosjekt with the words Nordlys and Fjell*. Fjell* also catches Fjellstasjonen.",
+    "domain": "Prosjekt",
+    "words": [
+      "Nordlys",
+      "Fjell*"
+    ],
+    "text": "Nordlys lanseres i mars. Fjellstasjonen får ny strøm, sier Anne Lie.",
+    "findings": [
+      {
+        "value": "Nordlys",
+        "start": 0,
+        "end": 7,
+        "category": "custom",
+        "prefix": "DATA",
+        "group": "domain",
+        "placeholder": "[DATA_1]"
+      },
+      {
+        "value": "Fjellstasjonen",
+        "start": 25,
+        "end": 39,
+        "category": "custom",
+        "prefix": "DATA",
+        "group": "domain",
+        "placeholder": "[DATA_2]"
+      },
+      {
+        "value": "Anne Lie",
+        "start": 59,
+        "end": 67,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      }
+    ],
+    "ghost_bar": 3,
+    "after_hide_all": "[DATA_1] lanseres i mars. [DATA_2] får ny strøm, sier [PERSON_1].",
+    "vault": {
+      "[DATA_1]": "Nordlys",
+      "[DATA_2]": "Fjellstasjonen",
+      "[PERSON_1]": "Anne Lie"
+    }
+  },
+  {
+    "id": "14-org-place",
+    "title": "Organisation and place",
+    "shows": "GLiNER finds Statnett and Bergen. They hide as [DATA_n] for now (see the note in README).",
+    "domain": "free",
+    "text": "Statnett bygger en ny transformatorstasjon i Bergen, sier Silje Haugen.",
+    "findings": [
+      {
+        "value": "Statnett",
+        "start": 0,
+        "end": 8,
+        "category": "organization",
+        "prefix": "DATA",
+        "group": "domain",
+        "placeholder": "[DATA_1]"
+      },
+      {
+        "value": "Bergen",
+        "start": 45,
+        "end": 51,
+        "category": "location",
+        "prefix": "DATA",
+        "group": "domain",
+        "placeholder": "[DATA_2]"
+      },
+      {
+        "value": "Silje Haugen",
+        "start": 58,
+        "end": 70,
+        "category": "person_name",
+        "prefix": "PERSON",
+        "group": "contact",
+        "placeholder": "[PERSON_1]"
+      }
+    ],
+    "ghost_bar": 3,
+    "after_hide_all": "[DATA_1] bygger en ny transformatorstasjon i [DATA_2], sier [PERSON_1].",
+    "vault": {
+      "[DATA_1]": "Statnett",
+      "[DATA_2]": "Bergen",
+      "[PERSON_1]": "Silje Haugen"
+    }
+  },
+  {
+    "id": "15-neg-church",
+    "title": "Negative: service time",
+    "shows": "Public church talk. Zero Findings.",
+    "domain": "religious",
+    "text": "Gudstjenesten starter klokken 11 på søndag.",
+    "findings": [],
+    "ghost_bar": 0,
+    "after_hide_all": "Gudstjenesten starter klokken 11 på søndag.",
+    "vault": {}
+  },
+  {
+    "id": "16-neg-class",
+    "title": "Negative: class average",
+    "shows": "Class-level numbers are not about one student. Zero Findings.",
+    "domain": "education",
+    "text": "Snittet i 10A var 4,1 på matteprøven.",
+    "findings": [],
+    "ghost_bar": 0,
+    "after_hide_all": "Snittet i 10A var 4,1 på matteprøven.",
+    "vault": {}
+  },
+  {
+    "id": "17-neg-checksum",
+    "title": "Negative: failed checksum",
+    "shows": "11 digits, but the fnr checksum fails. Zero Findings.",
+    "domain": "free",
+    "text": "Ordrenummer 01019000084 er sendt.",
+    "findings": [],
+    "ghost_bar": 0,
+    "after_hide_all": "Ordrenummer 01019000084 er sendt.",
+    "vault": {}
+  },
+  {
+    "id": "18-neg-published",
+    "title": "Negative: published decision",
+    "shows": "A Lovdata reference is public. Zero Findings.",
+    "domain": "courts",
+    "text": "Se avgjørelsen HR-2023-1234-A om erstatning.",
+    "findings": [],
+    "ghost_bar": 0,
+    "after_hide_all": "Se avgjørelsen HR-2023-1234-A om erstatning.",
+    "vault": {}
+  }
+]
