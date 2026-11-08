@@ -89,18 +89,89 @@ export function App() {
 }
 
 /** The ghost wears sunglasses while it checks this site; the chip shows the Engine. */
-function Header({ running, on = running }: { running: boolean; on?: boolean }) {
+function Header({
+  running,
+  on = running,
+  animate = false,
+}: {
+  running: boolean;
+  on?: boolean;
+  /** Swing the sunglasses on and off; only after the user flips the switch. */
+  animate?: boolean;
+}) {
   return (
     <header class="header">
-      <img
-        src={on ? '/icon/active/128.png' : '/icon/inactive/128.png'}
-        width={28}
-        height={28}
-        alt=""
-      />
+      <Ghost on={on} animate={animate} />
       <h1 class="title">Ghost Agent</h1>
       <span class={running ? 'chip' : 'chip chip--down'}>{running ? 'Running' : 'Engine down'}</span>
     </header>
+  );
+}
+
+/**
+ * public/ghost-active.svg drawn inline. The sunglasses are a second SVG on top, because
+ * Chromium turns only a whole <svg> in 3D, not the shapes inside one.
+ */
+function Ghost({ on, animate }: { on: boolean; animate: boolean }) {
+  return (
+    <span class={animate ? 'ghost ghost--animate' : 'ghost'} aria-hidden="true">
+      <svg width={28} height={28} viewBox="0 0 512 512">
+        <defs>
+          <path
+            id="ghost-shape"
+            d="M256 48 C352 48 424 120 424 224 L424 398 C424 440 390 456 362 434 C338 416 318 420 302 444 C288 464 272 472 256 472 C240 472 224 464 210 444 C194 420 174 416 150 434 C122 456 88 440 88 398 L88 224 C88 120 160 48 256 48 Z"
+          />
+          <clipPath id="ghost-clip">
+            <use href="#ghost-shape" />
+          </clipPath>
+          <linearGradient id="ghost-body" x1="0.2" y1="0" x2="0.8" y2="1">
+            <stop offset="0" stop-color="#FFFFFF" />
+            <stop offset="0.6" stop-color="#FFFFFF" />
+            <stop offset="1" stop-color="#EEF1F6" />
+          </linearGradient>
+          <linearGradient id="ghost-gloss" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95" />
+            <stop offset="1" stop-color="#FFFFFF" stop-opacity="0" />
+          </linearGradient>
+          <filter id="ghost-shadow" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#1E2330" flood-opacity="0.15" />
+          </filter>
+        </defs>
+        <use href="#ghost-shape" fill="url(#ghost-body)" filter="url(#ghost-shadow)" />
+        <path
+          clip-path="url(#ghost-clip)"
+          d="M120 210 C120 128 180 74 256 74 C332 74 392 128 392 210 C340 176 172 176 120 210 Z"
+          fill="url(#ghost-gloss)"
+        />
+        <use href="#ghost-shape" fill="none" stroke="#0A0B0F" stroke-width="14" stroke-linejoin="round" />
+        <ellipse cx="200" cy="228" rx="24" ry="34" fill="#0A0B0F" />
+        <ellipse cx="312" cy="228" rx="24" ry="34" fill="#0A0B0F" />
+      </svg>
+      <svg
+        class={on ? 'ghost__glasses' : 'ghost__glasses ghost__glasses--off'}
+        width={28}
+        height={28}
+        viewBox="0 0 512 512"
+      >
+        <g
+          fill="#0A0B0F"
+          stroke="#0A0B0F"
+          stroke-linejoin="round"
+          stroke-linecap="round"
+        >
+          <path d="M126 192 C126 180 136 172 150 172 L362 172 C376 172 386 180 386 192" fill="none" stroke-width="16" />
+          <rect x="240" y="170" width="32" height="30" stroke="none" />
+          <path
+            stroke-width="10"
+            d="M134 200 C134 188 142 182 154 182 L236 182 C248 182 254 190 252 202 L246 238 C240 268 220 282 192 282 C162 282 142 266 138 238 Z"
+          />
+          <path
+            stroke-width="10"
+            d="M378 200 C378 188 370 182 358 182 L276 182 C264 182 258 190 260 202 L266 238 C272 268 292 282 320 282 C350 282 370 266 374 238 Z"
+          />
+        </g>
+      </svg>
+    </span>
   );
 }
 
@@ -127,10 +198,11 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
   const on = isSiteOn(host, siteList, paused);
   const words = domains[domain];
   const [model, download] = useModelStatus();
+  const [toggled, setToggled] = useState(false);
 
   return (
     <main class="popup">
-      <Header running on={on} />
+      <Header running on={on} animate={toggled} />
 
       <div class="site">
         <span class="site__text">
@@ -139,12 +211,15 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
         </span>
         <button
           type="button"
-          class="switch"
+          class={toggled ? 'switch switch--animate' : 'switch'}
           role="switch"
           aria-checked={on}
           aria-label={`On for ${host}`}
           disabled={!host}
-          onClick={() => setSiteOn(host, !on)}
+          onClick={() => {
+            setToggled(true);
+            setSiteOn(host, !on);
+          }}
         >
           <span class="switch__knob" />
         </button>
@@ -212,6 +287,8 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
   const shown = words.filter((w) => w.toLowerCase().includes(query.trim().toLowerCase()));
   const list = useRef<HTMLUListElement>(null);
   const [overflows, setOverflows] = useState(false);
+  // The word just submitted, new or already there; its chip gets scrolled into view.
+  const [landed, setLanded] = useState<string | null>(null);
 
   // Search shows only once the full list scrolls; while filtered, keep the last answer.
   useLayoutEffect(() => {
@@ -220,9 +297,19 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
     setOverflows(!!ul && ul.scrollHeight > ul.clientHeight);
   }, [words, query]);
 
+  // Waits until the word is in the list, since a new one arrives a render later. A search that
+  // filters it out leaves nothing to scroll to.
+  useLayoutEffect(() => {
+    if (!landed || !words.includes(landed)) return;
+    const i = shown.indexOf(landed);
+    if (i >= 0) list.current?.children[i]?.scrollIntoView({ block: 'nearest' });
+    setLanded(null);
+  }, [landed, words]);
+
   const submit = async (e: Event) => {
     e.preventDefault();
     await addWord(domain, word);
+    setLanded(word.trim());
     setWord('');
   };
 
