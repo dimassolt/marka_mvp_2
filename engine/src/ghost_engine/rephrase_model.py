@@ -4,7 +4,8 @@ Gemma 4 (April 2026) replaced the Qwen3 1.7B of the first spec: it is newer and 
 open family on Norwegian in EuroEval, and the Opera Edition runs the same E2B model. Set
 GHOST_REPHRASE_MODEL=gemma-4-e4b for the larger E4B on a machine with RAM to spare.
 
-The model is loaded from disk only (ADR-0001). scripts/fetch_rephrase_model.py downloads it.
+The model is loaded from disk only (ADR-0001). scripts/fetch_rephrase_model.py downloads it,
+and so does POST /rephrase/model/download when the user asks in the popup.
 """
 
 import os
@@ -14,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from ghost_engine.detectors.gliner import MODELS_DIR
+from ghost_engine.model_download import ModelDownload, in_background
 from ghost_engine.ports import ChatModel
 from ghost_engine.rephrase import RephraseModelMissingError, Rephraser
 
@@ -57,6 +59,9 @@ def download_model(spec: ModelSpec, models_dir: Path = MODELS_DIR) -> Path:
     """Fetch the pinned GGUF file. Only scripts/fetch_rephrase_model.py calls this."""
     from huggingface_hub import hf_hub_download  # only needed for the download
 
+    from ghost_engine.hub import plain_http
+
+    plain_http()
     path = model_path(spec, models_dir)
     hf_hub_download(spec.repo, spec.file, revision=spec.revision, local_dir=path.parent)
     return path
@@ -94,3 +99,20 @@ def load_model(spec: ModelSpec | None = None, models_dir: Path = MODELS_DIR) -> 
 @cache
 def rephraser() -> Rephraser:
     return Rephraser(load_model)
+
+
+@cache
+def rephrase_download(models_dir: Path = MODELS_DIR) -> ModelDownload:
+    """The popup's download of the rephrase model. Once it is on disk, the model loads."""
+    spec = model_spec()
+
+    def download(target: Path) -> None:
+        download_model(spec, models_dir)
+
+    return ModelDownload(
+        download,
+        model_path(spec, models_dir).parent,
+        spec.file,
+        run=in_background,
+        on_ready=rephraser().warm,
+    )

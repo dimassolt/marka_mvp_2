@@ -71,7 +71,7 @@ The Engine listens on `http://127.0.0.1:8765` only. It never logs request or res
 The GLiNER model on this machine: `200 {"state": "missing", "downloaded_mb": 0, "error": null}`.
 
 - `state` is `missing`, `downloading`, `ready` or `failed`.
-- `downloaded_mb` is how much is on disk so far, while `downloading`. The model is about 600 MB.
+- `downloaded_mb` is how much is on disk so far, while `downloading`. The model is about 600 MB. Both model downloads use plain HTTP, not Hugging Face's Xet, which writes in blocks of about 67 MB: the file grows about every second, so the progress bar moves steadily.
 - `error` says why the last download failed, when `state` is `failed`.
 
 ### `POST /model/download`
@@ -90,19 +90,24 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 - The model is Gemma 4 E2B (instruction-tuned, Q4_K_M GGUF) through llama-cpp-python ([ADR-0005](adr/0005-gemma-4-rephrases-and-code-checks-it.md)). `GHOST_REPHRASE_MODEL=gemma-4-e4b` uses E4B instead. The Engine starts loading it in the background at startup and never unloads it. `scripts/fetch_rephrase_model.py` downloads it (about 3.1 GB); `/rephrase` never downloads.
 - `domain` and `words` work as in `/detect`. Without `domain`, the Engine uses `"free"`.
 - The model is told the Findings `/detect` gives for `sentence`. Its answer must not contain any of their values, in any case or another form of the word (same first 5 letters, e.g. `sykemeldt` and `sykemelding`), and no new `id`-group Finding, `email` or `phone`.
-- Placeholders already in `sentence` (e.g. `[PERSON_1]`) appear unchanged in `text`, and `text` has no other Placeholder.
+- Placeholders already in `sentence` (e.g. `[PERSON_1]`) appear unchanged in `text`, and `text` has no other Placeholder. A rewrite that drops one is safe, since its value was hidden already, so it is used if no try keeps it (Gemma drops `[HEALTH_1]` next to the diagnosis word it generalizes).
 - The answer is in the same language as `sentence` (Norwegian or English, told by its common words).
-- A rewrite that breaks one of these rules gets one more try, with the problems named. A safe rewrite with new keyword-list words (`sykdom`) gets one more try for plainer words; the one with fewer wins, and the Extension underlines them after Accept.
+- A rewrite that breaks one of these rules gets one more try, with the problems named. A safe rewrite that drops a Placeholder or has new keyword-list words (`sykdom`) gets one more try to keep it and use plainer words. The safe rewrite that keeps the most Placeholders wins, then the one with the fewest such words.
 - `text` is the rewritten sentence only: no explanation, quotes, label or `<think>` tags, and no line break.
 - `422`: `sentence` is empty, longer than 1000 characters, or `domain` is unknown. `503`: the model is not downloaded or failed to load. `409`: no try was safe; the Card suggests Hide.
 - When the model has loaded, the Engine's log says `Rephrase model ready (loaded in 1.5 s)`; if it is missing or fails, the log says so.
 
 ### `GET /rephrase/model`
 
-The rephrase model on this machine: `200 {"state": "ready", "error": null}`.
+The rephrase model on this machine: `200 {"state": "ready", "downloaded_mb": 0, "error": null}`.
 
-- `state` is `idle` (no load started yet), `loading`, `ready`, `missing` (not downloaded) or `failed`.
-- `error` says why loading failed, when `state` is `failed`.
+- `state` is `idle` (on disk, not loaded yet), `loading`, `ready`, `missing` (not downloaded), `downloading` or `failed` (on disk, but it could not load).
+- `downloaded_mb` is how much is on disk so far, while `downloading`. The model is about 3.1 GB.
+- `error` says why loading failed, when `state` is `failed`, or why the last download failed, when `state` is `missing`.
+
+### `POST /rephrase/model/download`
+
+Starts the download in the background, the same file `scripts/fetch_rephrase_model.py` fetches, and answers `202` with the new `GET /rephrase/model` body. Once the file is on disk the model loads, without a restart. Calling it again while it downloads, or once it is on disk, changes nothing. A request with an `Origin` that isn't the Extension's gets `403`, as for `POST /model/download`.
 
 ## 3. Extension behaviour
 
@@ -151,12 +156,12 @@ The rephrase model on this machine: `200 {"state": "ready", "error": null}`.
 
 ### Rephrase
 
-1. The sentence is the text around the Finding, up to the nearest `.`, `!`, `?` or line break on each side.
+1. The sentence is the text around the Finding, up to the nearest `.`, `!`, `?` or line break on each side. A sentence longer than 300 characters is cut to its clauses around the Finding: the clause that holds it, then one more clause on the left and on the right in turn, while the whole fits in 300. A clause ends at `,` or `;` followed by a space, so `4,1` stays whole. A single clause still longer is cut to whole words around the Finding. The Engine takes up to 1000 characters, but a 2B model rewrites a short span faster and better.
 2. The Card shows "Rephrasing…" while it waits, for at most 15 seconds. The Card stays open meanwhile, as if clicked.
 3. The Card shows the new sentence with **Accept** and **Reject**.
-4. Accept replaces the sentence through the editor's insert command, like Hide, and triggers one normal scan. New Findings are underlined as usual; nothing is rephrased automatically. If the user changed the sentence meanwhile, Accept changes nothing and the Card says "The text changed. Try again."
+4. Accept replaces the sentence through the editor's insert command, like Hide, and triggers one normal scan. When only clauses of a sentence were sent, the full stop and the capital the model adds are dropped first, so the rewrite fits mid-sentence. A capital stays when the span began with one or the word is all capitals. The Engine checked the rewrite, so its general words (`noen`, `en kvinne`, `medisinering`) are not underlined: Findings inside an accepted rewrite are dropped while it stays as it was, until the message is sent. Once the user types inside it, it is scanned like any other text. Nothing is rephrased automatically. If the user changed the sentence meanwhile, Accept changes nothing and the Card says "The text changed. Try again."
 5. Reject closes the Card and changes nothing.
-6. Without a rewrite, the Card says why above Hide, Rephrase and Ignore: "Engine not running", "Rephrase model isn't ready. See Settings in the popup." (`503`), "Couldn't rephrase without sensitive data. Use Hide." (`409`), "Rephrasing took too long. Try again." (15 s), "Couldn't rephrase. Try again.", or, when the background worker doesn't answer (the extension was rebuilt but not reloaded), "Ghost Agent was updated. Reload it on the extensions page, then this tab."
+6. Without a rewrite, the Card says why above Hide, Rephrase and Ignore: "Engine not running", "Rephrase needs Gemma 4. Download it in the popup, under Models." (`503`), "Couldn't rephrase without sensitive data. Use Hide." (`409`), "Rephrasing took too long. Try again." (15 s), "Couldn't rephrase. Try again.", or, when the background worker doesn't answer (the extension was rebuilt but not reloaded), "Ghost Agent was updated. Reload it on the extensions page, then this tab."
 
 ### Restore
 
@@ -165,15 +170,14 @@ The rephrase model on this machine: `200 {"state": "ready", "error": null}`.
 - Restore keeps working while the answer streams in, word by word.
 - A Placeholder that isn't in the Vault (e.g. an AI-invented `[PERSON_3]`) is left as it is.
 
-### Name model
+### Models
 
-- While `GET /model` isn't `ready`, the popup shows "Names and places are off" under the site row, with a **Download model** button (`POST /model/download`). While it downloads, a progress bar and `312 of about 600 MB`, refreshed every 2 s. If it fails, the error and **Try again**.
-- Settings has a **Name model** section with its state: Off, Downloading, Downloaded or Failed.
-- The new model is used from the next `/detect`; the Engine doesn't need a restart.
-
-### Rephrase model
-
-- Settings has a **Rephrase model** section under Name model, from `GET /rephrase/model`: Not loaded, Loading, Ready, Not downloaded or Failed, with a line on what it means. While it is Not loaded or Loading, the popup asks again every 2 s. A failed load shows its error.
+- Basic checks need no model and always run: the regex Detectors (fødselsnummer, card, IBAN, email, phone, secrets, first names) and the Domain's word lists. The Engine and the Extension start without either model; `make start` doesn't download them.
+- Two optional models add more, downloaded in this order: **1. GLiNER** (Names and places, about 600 MB: surnames, organisations, places) and **2. Gemma 4** (Rephrase, about 3.1 GB). Gemma 4 waits until GLiNER is done, unless it is on disk already. `make models` and the install scripts fetch both.
+- While a model is missing, the popup shows a box under the site row: "Basic checks are on", what they find, then both models as numbered steps with the model name and size. A step shows **Download** when it is next, "After step 1" while it waits, a progress bar and `312 of about 600 MB` while it downloads (refreshed every second), the error and **Try again** if the download failed, and a tick with "Downloaded" once done. A Gemma 4 that is on disk but would not load shows its error and "Restart the Engine". The box goes once both are downloaded.
+- A "?" by each step's title, like the Domain's, shows what the model enables on hover or keyboard focus, and that it runs on this computer. GLiNER: surnames, organisations and places; without it, first names only. Gemma 4: Rephrase on the Card; without it, use Hide.
+- Settings has a **Models** section with the same steps, always shown.
+- A new GLiNER is used from the next `/detect`, and a new Gemma 4 loads once downloaded; the Engine doesn't need a restart.
 
 ### Engine down
 

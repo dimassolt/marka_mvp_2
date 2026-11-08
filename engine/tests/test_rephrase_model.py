@@ -38,3 +38,28 @@ def test_the_model_file_lives_in_a_folder_named_after_the_repo(tmp_path: Path) -
 def test_loading_a_missing_model_says_how_to_get_it(tmp_path: Path) -> None:
     with pytest.raises(RephraseModelMissingError, match="fetch_rephrase_model"):
         load_model(REPHRASE_MODELS[DEFAULT_MODEL], tmp_path)
+
+
+def test_the_popup_download_fetches_into_the_models_folder(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from ghost_engine import rephrase_model
+
+    calls: list[tuple[str, Path]] = []
+    loads: list[str] = []
+
+    def download_model(spec: rephrase_model.ModelSpec, models_dir: Path) -> None:
+        calls.append((spec.file, models_dir))
+
+    class Loader:
+        def warm(self) -> None:
+            loads.append("warm")
+
+    monkeypatch.setattr(rephrase_model, "download_model", download_model)
+    monkeypatch.setattr(rephrase_model, "in_background", lambda job: job())
+    monkeypatch.setattr(rephrase_model, "rephraser", Loader)
+
+    rephrase_model.rephrase_download.__wrapped__(tmp_path).start()
+
+    assert calls == [(rephrase_model.model_spec().file, tmp_path)]
+    assert loads == ["warm"]

@@ -1,7 +1,11 @@
-.PHONY: start dev
+.PHONY: start dev models
 
-# Install dependencies if missing or out of date, then start both.
-start: engine/.venv engine/models/gliner_multi-v2.1/onnx/model_fp16.onnx engine/models/gemma-4-E2B-it-GGUF/gemma-4-E2B-it-Q4_K_M.gguf extension/node_modules dev
+# Install dependencies if missing or out of date, then start both. The models are optional:
+# basic checks run without them, and the popup offers both downloads (or run make models).
+start: engine/.venv extension/node_modules dev
+
+# Both models, in the popup's order: GLiNER (names and places), then Gemma 4 (Rephrase).
+models: engine/.venv engine/models/gliner_multi-v2.1/onnx/model_fp16.onnx engine/models/gemma-4-E2B-it-GGUF/gemma-4-E2B-it-Q4_K_M.gguf
 
 # Start the engine and the extension together. Ctrl+C stops both.
 dev:

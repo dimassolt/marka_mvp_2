@@ -4,13 +4,14 @@ import { checkEngine, engineRunning } from '@/utils/engine-status';
 import { AI_CHAT_SITES, checkEverywhere, checkOnlyChosenSites, tourPending } from '@/utils/onboarding';
 import {
   downloadModel,
-  MODEL_SIZE_MB,
+  downloadRephraseModel,
   modelStatus,
   rephraseModelStatus,
   progressPercent,
   type ModelStatus,
   type RephraseModelStatus,
 } from '@/utils/model';
+import { modelSteps, type ModelStep } from '@/utils/model-steps';
 import {
   addSite,
   addWord,
@@ -58,19 +59,23 @@ function useHostname(): string {
   return host;
 }
 
+/** How often the popup asks while a model downloads: the Engine is local, so it can be often. */
+const DOWNLOAD_POLL_MS = 1000;
+/** How often it asks while the rephrase model loads. */
+const LOAD_POLL_MS = 2000;
+
 /**
- * The Engine's GLiNER model. Asks again every 2 s while it downloads, and when `running`
+ * The Engine's GLiNER model. Asks again every second while it downloads, and when `running`
  * changes (the tour stays open while the user starts the Engine).
  */
-function useModelStatus(running = true): [ModelStatus | null, () => void] {
-  const [status, setStatus] = useState<ModelStatus | null>(null);
+function useModelStatus(running = true): [ModelStatus | null, () => void] {  const [status, setStatus] = useState<ModelStatus | null>(null);
   useEffect(() => {
     if (running) modelStatus().then(setStatus);
     else setStatus(null);
   }, [running]);
   useEffect(() => {
     if (status?.state !== 'downloading') return;
-    const timer = setTimeout(() => modelStatus().then(setStatus), 2000);
+    const timer = setTimeout(() => modelStatus().then(setStatus), DOWNLOAD_POLL_MS);
     return () => clearTimeout(timer);
   }, [status]);
   const download = () => {
@@ -79,18 +84,30 @@ function useModelStatus(running = true): [ModelStatus | null, () => void] {
   return [status, download];
 }
 
-/** The Engine's rephrase model. Asks again every 2 s until it is loaded or has failed. */
-function useRephraseModelStatus(): RephraseModelStatus | null {
+/** The Engine's rephrase model. Asks again every second while it downloads, every 2 s while it loads. */
+function useRephraseModelStatus(): [RephraseModelStatus | null, () => void] {
   const [status, setStatus] = useState<RephraseModelStatus | null>(null);
   useEffect(() => {
     rephraseModelStatus().then(setStatus);
   }, []);
   useEffect(() => {
-    if (status?.state !== 'idle' && status?.state !== 'loading') return;
-    const timer = setTimeout(() => rephraseModelStatus().then(setStatus), 2000);
+    if (status?.state !== 'idle' && status?.state !== 'loading' && status?.state !== 'downloading') return;
+    const delay = status.state === 'downloading' ? DOWNLOAD_POLL_MS : LOAD_POLL_MS;
+    const timer = setTimeout(() => rephraseModelStatus().then(setStatus), delay);
     return () => clearTimeout(timer);
   }, [status]);
-  return status;
+  const download = () => {
+    downloadRephraseModel().then(setStatus);
+  };
+  return [status, download];
+}
+
+/** Both optional models as ordered steps, and a download for each (spec §3, Models). */
+function useModelSteps(): [ModelStep[], (id: ModelStep['id']) => void] {
+  const [names, downloadNames] = useModelStatus();
+  const [rephrase, downloadRephrase] = useRephraseModelStatus();
+  const download = (id: ModelStep['id']) => (id === 'names' ? downloadNames() : downloadRephrase());
+  return [modelSteps(names, rephrase), download];
 }
 
 export function App() {
@@ -254,9 +271,10 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
   const host = useHostname();
   const on = isSiteOn(host, siteList, paused);
   const words = domains[domain];
-  const [model, download] = useModelStatus();
+  const [steps, download] = useModelSteps();
+  // The box stays until every model is on disk; a model that is loading counts as there.
+  const missing = steps.some((step) => step.state !== 'done' && step.state !== 'loading');
   const [toggled, setToggled] = useState(false);
-
   return (
     <main class="popup">
       <Header running on={on} animate={toggled} />
@@ -290,7 +308,16 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
         </button>
       </div>
 
-      {model && model.state !== 'ready' && <ModelNotice status={model} onDownload={download} />}
+      {missing && (
+        <div class="model" aria-live="polite">
+          <h2 class="model__title">Basic checks are on</h2>
+          <p class="model__text">
+            Ghost already finds ID numbers, cards, emails, phone numbers, first names and your
+            Domain's words. Two optional models add more. Download them in this order:
+          </p>
+          <ModelSteps steps={steps} onDownload={download} />
+        </div>
+      )}
 
       <div class="stack">
         <div class="label-row">
@@ -521,11 +548,9 @@ function Settings({ onBack, onTour }: { onBack: () => void; onTour: () => void }
   const list = useItem(sites) ?? [];
   const paused = useItem(pausedSites) ?? [];
   const [site, setSite] = useState('');
-  const [model, download] = useModelStatus();
-  const rephraseModel = useRephraseModelStatus();
+  const [steps, download] = useModelSteps();
   const block = useItem(blockSend) ?? false;
   const [toggled, setToggled] = useState(false);
-
   const submit = async (e: Event) => {
     e.preventDefault();
     await addSite(site);
@@ -601,27 +626,13 @@ function Settings({ onBack, onTour }: { onBack: () => void; onTour: () => void }
           </button>
         </div>
       </section>
-      {model && (
+      {steps.length > 0 && (
         <section class="section">
-          <div class="heading-row">
-            <h2 class="heading">Name model</h2>
-            <span class="pill">{MODEL_PILL[model.state]}</span>
+          <div class="sites-head">
+            <h2 class="heading">Models</h2>
+            <p class="hint">Basic checks always run. These two add more, in this order. Hover ? to see what each does.</p>
           </div>
-          {model.state === 'ready' ? (
-            <p class="hint">GLiNER finds surnames, organisations and places. It runs on this computer.</p>
-          ) : (
-            <ModelNotice status={model} onDownload={download} flat />
-          )}
-        </section>
-      )}
-      {rephraseModel && (
-        <section class="section">
-          <div class="heading-row">
-            <h2 class="heading">Rephrase model</h2>
-            <span class="pill">{REPHRASE_PILL[rephraseModel.state]}</span>
-          </div>
-          <p class="hint">{REPHRASE_HINT[rephraseModel.state]}</p>
-          {rephraseModel.error && <p class="hint mono">{rephraseModel.error}</p>}
+          <ModelSteps steps={steps} onDownload={download} />
         </section>
       )}
       {paused.length > 0 && (
@@ -660,90 +671,99 @@ function Settings({ onBack, onTour }: { onBack: () => void; onTour: () => void }
   );
 }
 
-/** The Rephrase model's state in Settings, next to its heading. */
-const REPHRASE_PILL: Record<RephraseModelStatus['state'], string> = {
-  idle: 'Not loaded',
-  loading: 'Loading',
-  ready: 'Ready',
-  missing: 'Not downloaded',
-  failed: 'Failed',
-};
-
-/** What each state means for the user, under the heading. */
-const REPHRASE_HINT: Record<RephraseModelStatus['state'], string> = {
-  idle: 'Gemma 4 rewrites a sentence without its sensitive parts. It loads when the Engine starts.',
-  loading: 'Gemma 4 is loading. Rephrase works in a few seconds.',
-  ready: 'Gemma 4 rewrites a sentence without its sensitive parts. It runs on this computer.',
-  missing: 'Rephrase is off. Run make start to download Gemma 4, about 3.1 GB, once.',
-  failed: 'Rephrase is off. Gemma 4 could not load. Restart the Engine.',
-};
-
-/** The Name model's state in Settings, next to its heading. */
-const MODEL_PILL: Record<ModelStatus['state'], string> = {
-  missing: 'Off',
-  downloading: 'Downloading',
-  ready: 'Downloaded',
-  failed: 'Failed',
+/** What a step says while it can't be downloaded, or once it is there. */
+const STEP_NOTE: Partial<Record<ModelStep['state'], string>> = {
+  done: 'Downloaded',
+  loading: 'Downloaded. Loading…',
+  waiting: 'After step 1',
 };
 
 /**
- * Offers the GLiNER model download, like scripts/install.sh does. Without the model the
- * Engine still checks everything else, so the popup says plainly what is off.
+ * The optional models as numbered steps, GLiNER then Gemma 4, like scripts/install.sh fetches
+ * them. A "?" by each title says what the model enables, on hover or keyboard focus, like the
+ * Domain's "?".
  */
-function ModelNotice({
-  status,
-  onDownload,
-  flat = false,
-}: {
-  status: ModelStatus;
-  onDownload: () => void;
-  /** In Settings: no box and no title, the section heading says it. */
-  flat?: boolean;
-}) {
-  const percent = progressPercent(status.downloaded_mb);
+function ModelSteps({ steps, onDownload }: { steps: ModelStep[]; onDownload: (id: ModelStep['id']) => void }) {
   return (
-    <div class={flat ? 'model model--flat' : 'model'} aria-live="polite">
-      {status.state === 'downloading' ? (
-        <>
-          {!flat && <h2 class="model__title">Downloading the name model</h2>}
-          <div
-            class="bar"
-            role="progressbar"
-            aria-label="Model download"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={percent}
-          >
-            <span class="bar__fill" style={{ width: `${percent}%` }} />
-          </div>
-          <p class="model__text">
-            <span class="mono">{status.downloaded_mb}</span> of about{' '}
-            <span class="mono">{MODEL_SIZE_MB}</span> MB. Keep the Engine running. You can close
-            this popup.
-          </p>
-        </>
-      ) : status.state === 'failed' ? (
-        <>
-          {!flat && <h2 class="model__title">Download failed</h2>}
-          <p class="error">{status.error}</p>
-          <p class="model__text">Check the internet connection and try again.</p>
-          <button type="button" class="btn" onClick={onDownload}>
-            Try again
-          </button>
-        </>
-      ) : (
-        <>
-          {!flat && <h2 class="model__title">Names and places are off</h2>}
-          <p class="model__text">
-            Download the GLiNER model to find surnames, organisations and places. About{' '}
-            {MODEL_SIZE_MB} MB, once. Your text never leaves this computer.
-          </p>
-          <button type="button" class="btn" onClick={onDownload}>
-            Download model
-          </button>
-        </>
-      )}
-    </div>
+    <ol class="steps">
+      {steps.map((step, i) => {
+        const tip = `model-tip-${step.id}`;
+        const percent = progressPercent(step.downloadedMb, step.sizeMb);
+        return (
+          <li key={step.id} class={`step step--${step.state}`}>
+            <span class="step__num" aria-hidden="true">
+              {step.state === 'done' || step.state === 'loading' ? '✓' : i + 1}
+            </span>
+            <div class="step__body">
+              <div class="step__head">
+                <span class="step__title-row">
+                  <span class="step__title">{step.title}</span>
+                  <span class="info info--step">
+                    <button
+                      type="button"
+                      class="info__btn"
+                      aria-label={`About ${step.model}`}
+                      aria-describedby={tip}
+                    >
+                      <Icon size={15}>
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <path d="M12 17h.01" />
+                      </Icon>
+                    </button>
+                    <span role="tooltip" id={tip} class="info__tip step__tip">
+                      {step.enables}
+                      <span class="info__line">Runs on this computer. Your text never leaves it.</span>
+                    </span>
+                  </span>
+                </span>
+                <span class="step__meta mono">
+                  {step.model} · {step.sizeMb >= 1000 ? `${step.sizeMb / 1000} GB` : `${step.sizeMb} MB`}
+                </span>
+              </div>
+              {step.state === 'next' && (
+                <button type="button" class="btn btn--sm" aria-describedby={tip} onClick={() => onDownload(step.id)}>
+                  Download
+                </button>
+              )}
+              {step.state === 'downloading' && (
+                <>
+                  <div
+                    class="bar"
+                    role="progressbar"
+                    aria-label={`${step.model} download`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={percent}
+                  >
+                    <span class="bar__fill" style={{ width: `${percent}%` }} />
+                  </div>
+                  <p class="model__text">
+                    <span class="mono">{step.downloadedMb}</span> of about <span class="mono">{step.sizeMb}</span> MB.
+                    Keep the Engine running.
+                  </p>
+                </>
+              )}
+              {step.state === 'failed' && (
+                <>
+                  <p class="error">{step.error}</p>
+                  <button type="button" class="btn btn--sm" aria-describedby={tip} onClick={() => onDownload(step.id)}>
+                    Try again
+                  </button>
+                </>
+              )}
+              {step.state === 'broken' && (
+                <>
+                  <p class="error mono">{step.error}</p>
+                  <p class="model__text">It is downloaded but would not load. Restart the Engine.</p>
+                </>
+              )}
+              {STEP_NOTE[step.state] && <p class="step__note">{STEP_NOTE[step.state]}</p>}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

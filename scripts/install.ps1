@@ -54,7 +54,10 @@ Step "Engine: rephrase model, Gemma 4 E2B (about 3.1 GB, downloaded once)"
 Run "engine" "uv" @("run", "python", "scripts/fetch_rephrase_model.py")
 
 Step "Extension: npm packages"
-Run "extension" "npm" @("install")
+# npm.cmd, not npm: "npm" resolves to the npm.ps1 shim, which rebuilds its arguments from the
+# caller's command text. Here that text is "& $cmd @cmdArgs", not an npm command, and npm
+# failed on Windows with: Unknown command: "cmd". npm.cmd takes its arguments as given.
+Run "extension" "npm.cmd" @("install")
 
 Step "Checking the Engine"
 Run "engine" "uv" @("run", "pytest", "-q")

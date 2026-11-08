@@ -3,11 +3,12 @@
 A local language model rewrites one sentence so it no longer reveals sensitive data. It is
 told exactly what Ghost found. The model is not trusted: its answer is cleaned, then checked
 in code. The rewrite must not contain any value found in the sentence (in any case or another
-form of the word), no new ID number, email or phone, and it must keep every Placeholder and
-invent none. If a check fails, the model gets one more try with the problems named; then the
-Engine refuses. A new general word that is on a keyword list ("sykdom") is safe, but the
-Extension would underline it after Accept (docs/spec.md §3), so the model is asked once for
-plainer words; the rewrite with the fewest such words wins.
+form of the word), no new ID number, email or phone, and no Placeholder that the sentence
+doesn't have. If a check fails, the model gets one more try with the problems named; then the
+Engine refuses. Two things are safe but asked once more: a dropped Placeholder (its value was
+hidden already; Gemma drops [HEALTH_1] next to the diagnosis word it generalizes) and a new
+general word on a keyword list ("sykdom"). The safe rewrite that keeps the most Placeholders,
+then has the fewest such words, wins.
 """
 
 import logging
@@ -170,24 +171,30 @@ class Rephraser:
         found = sorted({_utf16_slice(sentence, f) for f in self._detect(sentence, domain, words)})
         language = language_of(sentence)
         problems: list[str] = []
-        best: tuple[int, str] | None = None  # safe, but with new keyword words: (count, text)
+        # Safe, but dropped Placeholders or has new keyword words: ((dropped, words), text).
+        best: tuple[tuple[int, int], str] | None = None
         for attempt in range(self._attempts):
             messages = _prompt(sentence, domain, found, language, problems)
             temperature = TEMPERATURES[min(attempt, len(TEMPERATURES) - 1)]
             with self._chat_lock:
                 reply = model.chat(messages, temperature=temperature, max_tokens=MAX_TOKENS)
             text = clean(reply)
-            problems, flagged = self._problems(text, domain, words, keep, found)
+            problems, dropped, flagged = self._problems(text, domain, words, keep, found)
             answered_in = language_of(text)
             if language and answered_in and answered_in != language:
                 problems.append(f"Your last answer was not in {LANGUAGES[language]}.")
-            if problems:
+            unsafe = bool(problems)
+            if dropped:
+                problems.append(f"Your answer must keep {', '.join(dropped)} exactly as written.")
+            if unsafe:
                 continue
-            if not flagged:
+            if not dropped and not flagged:
                 return text
-            if best is None or len(flagged) < best[0]:
-                best = (len(flagged), text)
-            problems = [f"Avoid {_quoted(flagged)}: use plainer, more general words."]
+            score = (len(dropped), len(flagged))
+            if best is None or score < best[0]:
+                best = (score, text)
+            if flagged:
+                problems.append(f"Avoid {_quoted(flagged)}: use plainer, more general words.")
         if best is not None:
             return best[1]
         raise RephraseFailedError("could not rephrase without sensitive data")
@@ -215,11 +222,12 @@ class Rephraser:
 
     def _problems(
         self, text: str, domain: str, words: Sequence[str], keep: set[str], found: list[str]
-    ) -> tuple[list[str], list[str]]:
+    ) -> tuple[list[str], list[str], list[str]]:
         """What is wrong with a rewrite, as instructions for the next try (empty means safe),
-        and the new general words in it that a Detector still flags."""
+        the sentence's Placeholders it dropped, and the new general words in it that a
+        Detector still flags. The last two are safe."""
         if not text:
-            return ["Your last answer was empty. Answer with the rewritten sentence."], []
+            return ["Your last answer was empty. Answer with the rewritten sentence."], [], []
         leftovers = {value for value in found if _contains(text, value)}
         flagged: set[str] = set()
         for finding in self._detect(text, domain, words):
@@ -238,11 +246,9 @@ class Rephraser:
                 "Replace it with general words."
             )
         in_text = set(PLACEHOLDER.findall(text))
-        if missing := sorted(keep - in_text):
-            problems.append(f"Your answer must keep {', '.join(missing)} exactly as written.")
         if invented := sorted(in_text - keep):
             problems.append(f"Do not write {', '.join(invented)}. Use plain words instead.")
-        return problems, sorted(flagged - leftovers)
+        return problems, sorted(keep - in_text), sorted(flagged - leftovers)
 
 
 def _prompt(

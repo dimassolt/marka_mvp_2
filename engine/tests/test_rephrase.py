@@ -119,7 +119,7 @@ def test_the_first_prompt_names_what_ghost_found() -> None:
 
 
 def test_a_new_general_domain_word_is_allowed_when_no_try_avoids_it() -> None:
-    # docs/spec.md §3: after Accept, new Findings are underlined as usual.
+    # docs/spec.md §2: a new keyword-list word is safe; plainer words are only preferred.
     model = ScriptedModel("En kvinne har en kronisk sykdom.", "En kvinne har en sykdom.")
 
     rewrite = make(model, "diabetes", "sykdom").rephrase("Kari har diabetes.", "health")
@@ -178,6 +178,29 @@ def test_tries_again_when_a_placeholder_is_lost() -> None:
 
     assert make(model).rephrase(sentence, "health") == "[PERSON_1] har en kronisk sykdom."
     assert "[PERSON_1]" in last_user_message(model)
+
+
+def test_a_safe_rewrite_that_drops_a_placeholder_is_used_when_no_try_keeps_it() -> None:
+    # fix/rephrase: Gemma drops [HEALTH_1] next to the diagnosis word it generalizes, and
+    # when told to keep it, keeps "diagnosen" with it. A dropped Placeholder reveals nothing.
+    sentence = "Hun fikk diagnosen [HEALTH_1] type 1 og bruker insulin."
+    model = ScriptedModel(
+        "Hun har en helseutfordring som krever daglig behandling.",
+        "Hun fikk diagnosen [HEALTH_1] og får behandling.",
+    )
+
+    rewrite = make(model, "diagnosen", "insulin").rephrase(sentence, "health")
+
+    assert rewrite == "Hun har en helseutfordring som krever daglig behandling."
+
+
+def test_a_retry_after_a_leak_also_asks_to_keep_a_dropped_placeholder() -> None:
+    model = ScriptedModel("Kari har en sykdom.", "[PERSON_1] har en sykdom.")
+
+    make(model, "Kari").rephrase("[PERSON_1] og Kari har diabetes.", "health")
+
+    assert '"Kari"' in last_user_message(model)
+    assert "keep [PERSON_1]" in last_user_message(model)
 
 
 def test_an_invented_placeholder_is_not_accepted() -> None:

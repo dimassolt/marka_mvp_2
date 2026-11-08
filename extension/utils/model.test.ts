@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { downloadModel, modelStatus, progressPercent, rephraseModelStatus } from './model';
+import {
+  downloadModel,
+  downloadRephraseModel,
+  modelStatus,
+  progressPercent,
+  REPHRASE_MODEL_SIZE_MB,
+  rephraseModelStatus,
+} from './model';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -77,3 +84,28 @@ describe('rephraseModelStatus', () => {
     expect(await rephraseModelStatus()).toBeNull();
   });
 });
+
+describe('downloadRephraseModel', () => {
+  it('asks POST /rephrase/model/download and returns the new status', async () => {
+    const status = { state: 'downloading', downloaded_mb: 0, error: null };
+    const fetch = vi.fn().mockResolvedValue(Response.json(status, { status: 202 }));
+    vi.stubGlobal('fetch', fetch);
+
+    expect(await downloadRephraseModel()).toEqual(status);
+    expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:8765/rephrase/model/download', { method: 'POST' });
+  });
+
+  it('is null when the Engine is not running', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    expect(await downloadRephraseModel()).toBeNull();
+  });
+});
+
+describe('progressPercent of the rephrase model', () => {
+  it('compares the megabytes so far with Gemma 4 E2B, about 3.1 GB', () => {
+    expect(REPHRASE_MODEL_SIZE_MB).toBe(3100);
+    expect(progressPercent(1550, REPHRASE_MODEL_SIZE_MB)).toBe(50);
+  });
+});
+
