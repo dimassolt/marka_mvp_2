@@ -757,3 +757,134 @@ svg {
     transition: none !important;
   }
 }
+
+/* Text link: the welcome tour in Settings */
+
+.link-btn {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink-2);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-btn:hover {
+  color: var(--color-ink);
+}
+
+/* First-run tour: the main view's layout, each step in a paper-3 box like the site row */
+
+.tour__skip {
+  margin-left: auto;
+  height: 32px;
+  padding: 0 12px;
+  border: var(--rule-hair) solid var(--color-rule-2);
+  border-radius: var(--radius-control);
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tour__skip:hover {
+  background: var(--color-paper-3);
+  color: var(--color-ink);
+}
+
+.tour__skip:active {
+  background: var(--color-rule);
+}
+
+.tour__box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 16px 16px;
+  padding: 14px;
+  background: var(--color-paper-3);
+  border-radius: var(--radius-card);
+}
+
+/* The name model box under the Engine step: one gap, like the site row and model box in the main view. */
+.tour__box + .model {
+  margin-top: 0;
+}
+
+.tour__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tour__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.tour__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-ink-2);
+}
+
+.tour__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.tour__choice input {
+  margin: 3px 0 0;
+  accent-color: var(--color-accent);
+}
+
+.tour__choice input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tour__choice > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.tour__footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 12px 16px 16px;
+}
+
+.tour__footer > .btn {
+  justify-self: end;
+}
+
+.tour__back {
+  justify-self: start;
+  height: 40px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tour__back:hover {
+  color: var(--color-ink);
+}

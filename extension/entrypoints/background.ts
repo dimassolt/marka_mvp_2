@@ -1,7 +1,11 @@
 import { checkEngine, detect, iconPathsFor, rephrase } from '@/utils/engine-status';
+import { markTourOnInstall } from '@/utils/onboarding';
 import { remember, type Vault } from '@/utils/vault';
 
 export default defineBackground(() => {
+  // A fresh install gets the tour the first time the popup opens; an update doesn't.
+  browser.runtime.onInstalled.addListener(markTourOnInstall);
+
   browser.runtime.onMessage.addListener((message, sender) => {
     // Content scripts can't reach the Engine on localhost, so they ask here (docs/spec.md §3).
     if (message?.type === 'detect') return detect(message.text);

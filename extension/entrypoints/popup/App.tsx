@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { checkEngine, engineRunning } from '@/utils/engine-status';
+import { AI_CHAT_SITES, checkEverywhere, checkOnlyChosenSites, tourPending } from '@/utils/onboarding';
 import {
   downloadModel,
   MODEL_SIZE_MB,
@@ -28,7 +29,7 @@ import {
   sites,
 } from '@/utils/popup-settings';
 
-type View = 'main' | 'new-domain' | 'settings';
+type View = 'main' | 'new-domain' | 'settings' | 'tour';
 
 type Item<T> = {
   getValue(): Promise<T>;
@@ -56,12 +57,16 @@ function useHostname(): string {
   return host;
 }
 
-/** The Engine's GLiNER model. Asks again every 2 s while it downloads. */
-function useModelStatus(): [ModelStatus | null, () => void] {
+/**
+ * The Engine's GLiNER model. Asks again every 2 s while it downloads, and when `running`
+ * changes (the tour stays open while the user starts the Engine).
+ */
+function useModelStatus(running = true): [ModelStatus | null, () => void] {
   const [status, setStatus] = useState<ModelStatus | null>(null);
   useEffect(() => {
-    modelStatus().then(setStatus);
-  }, []);
+    if (running) modelStatus().then(setStatus);
+    else setStatus(null);
+  }, [running]);
   useEffect(() => {
     if (status?.state !== 'downloading') return;
     const timer = setTimeout(() => modelStatus().then(setStatus), 2000);
@@ -89,6 +94,7 @@ function useRephraseModelStatus(): RephraseModelStatus | null {
 
 export function App() {
   const running = useItem(engineRunning);
+  const pending = useItem(tourPending);
   const [view, setView] = useState<View>('main');
   const toMain = () => setView('main');
 
@@ -97,10 +103,18 @@ export function App() {
     checkEngine();
   }, []);
 
-  if (running === undefined) return null;
+  if (running === undefined || pending === undefined) return null;
+  // The tour comes first, even with the Engine down: its second step starts the Engine.
+  if (pending || view === 'tour') {
+    const finish = () => {
+      tourPending.setValue(false);
+      toMain();
+    };
+    return <Tour running={running} onFinish={finish} />;
+  }
   if (!running) return <EngineDown />;
   if (view === 'new-domain') return <NewDomain onBack={toMain} />;
-  if (view === 'settings') return <Settings onBack={toMain} />;
+  if (view === 'settings') return <Settings onBack={toMain} onTour={() => setView('tour')} />;
   return <Main onNewDomain={() => setView('new-domain')} onSettings={() => setView('settings')} />;
 }
 
@@ -285,23 +299,7 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
           <DomainInfo domain={domain} own={!!words} />
         </div>
         <div class="row">
-          <select
-            id="domain"
-            class="select"
-            value={domain}
-            onChange={(e) => selectedDomain.setValue(e.currentTarget.value)}
-          >
-            {BUILT_IN_DOMAINS.map((name) => (
-              <option key={name} value={name}>
-                {BUILT_IN_DOMAIN_INFO[name].label}
-              </option>
-            ))}
-            {Object.keys(domains).map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
+          <DomainSelect domain={domain} domains={domains} />
           <button
             type="button"
             class="icon-btn icon-btn--lg"
@@ -320,6 +318,24 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
 
       {words ? <Words key={domain} domain={domain} words={words} /> : <BuiltIn domain={domain} />}
     </main>
+  );
+}
+
+/** The Domain list: built-in Domains, then the user's own. Choosing one sets `selectedDomain`. */
+function DomainSelect({ domain, domains }: { domain: string; domains: Record<string, string[]> }) {
+  return (
+    <select id="domain" class="select" value={domain} onChange={(e) => selectedDomain.setValue(e.currentTarget.value)}>
+      {BUILT_IN_DOMAINS.map((name) => (
+        <option key={name} value={name}>
+          {BUILT_IN_DOMAIN_INFO[name].label}
+        </option>
+      ))}
+      {Object.keys(domains).map((name) => (
+        <option key={name} value={name}>
+          {name}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -500,7 +516,7 @@ function NewDomain({ onBack }: { onBack: () => void }) {
   );
 }
 
-function Settings({ onBack }: { onBack: () => void }) {
+function Settings({ onBack, onTour }: { onBack: () => void; onTour: () => void }) {
   const list = useItem(sites) ?? [];
   const paused = useItem(pausedSites) ?? [];
   const [site, setSite] = useState('');
@@ -610,6 +626,12 @@ function Settings({ onBack }: { onBack: () => void }) {
           </ul>
         </section>
       )}
+      <div class="tear" />
+      <section class="section">
+        <button type="button" class="link-btn" onClick={onTour}>
+          Take the welcome tour again
+        </button>
+      </section>
     </main>
   );
 }
@@ -698,6 +720,148 @@ function ModelNotice({
         </>
       )}
     </div>
+  );
+}
+
+const TOUR_STEPS = 4;
+
+/**
+ * The first-run tour (docs/spec.md, Onboarding): shown the first time the popup opens after
+ * a fresh install, and again from Settings. Laid out like the main view: the header, then
+ * each step in a paper-3 box like the site row, then Back and the next step.
+ */
+function Tour({ running, onFinish }: { running: boolean; onFinish: () => void }) {
+  const [step, setStep] = useState(0);
+  const last = step === TOUR_STEPS - 1;
+  const next = step === 1 && !running ? 'Continue without it' : last ? 'Done' : step === 0 ? 'Get started' : 'Continue';
+
+  return (
+    <main class="popup">
+      <header class="header">
+        <Ghost on animate={false} />
+        <h1 class="title">Ghost Agent</h1>
+        {!last && (
+          <button type="button" class="tour__skip" onClick={onFinish}>
+            Skip
+          </button>
+        )}
+      </header>
+      {step === 0 && <TourWelcome />}
+      {step === 1 && <TourEngine running={running} />}
+      {step === 2 && <TourDomain />}
+      {step === 3 && <TourSites />}
+      <div class="tear" />
+      <footer class="tour__footer">
+        {step > 0 ? (
+          <button type="button" class="tour__back" onClick={() => setStep(step - 1)}>
+            Back
+          </button>
+        ) : (
+          <span />
+        )}
+        <span class="hint">
+          {step + 1} of {TOUR_STEPS}
+        </span>
+        <button type="button" class="btn" onClick={last ? onFinish : () => setStep(step + 1)}>
+          {next}
+        </button>
+      </footer>
+    </main>
+  );
+}
+
+function TourWelcome() {
+  return (
+    <section class="tour__box">
+      <h2 class="tour__title">Your text stays yours</h2>
+      <p class="body body--sm">Ghost Agent underlines sensitive data before you send it to an AI chat. You choose what to hide.</p>
+      <ul class="tour__list">
+        <li>Checked on this computer. Nothing is sent anywhere.</li>
+        <li>Hidden values live in memory only.</li>
+        <li>Nothing in your text changes until you click.</li>
+      </ul>
+    </section>
+  );
+}
+
+/** Re-checks the Engine every 2 s while it is down, so the step moves on by itself. */
+function TourEngine({ running }: { running: boolean }) {
+  const [model, download] = useModelStatus(running);
+  useEffect(() => {
+    if (running) return;
+    const timer = setInterval(checkEngine, 2000);
+    return () => clearInterval(timer);
+  }, [running]);
+
+  return (
+    <>
+      <section class="tour__box">
+        <div class="tour__head">
+          <h2 class="tour__title">Start the Engine</h2>
+          <span class={running ? 'chip' : 'chip chip--down'}>{running ? 'Running' : 'Not running'}</span>
+        </div>
+        {running ? (
+          <p class="body body--sm">The Engine reads your text here, on this computer.</p>
+        ) : (
+          <>
+            <p class="body body--sm">The Engine reads your text on this computer. In the project folder, run:</p>
+            {/* Two lines, not &&: works in cmd, PowerShell and zsh alike. */}
+            <code class="code">{'cd engine\nuv run ghost-engine'}</code>
+            <p class="hint">This popup notices as soon as it starts.</p>
+          </>
+        )}
+      </section>
+      {running && model && model.state !== 'ready' && <ModelNotice status={model} onDownload={download} />}
+    </>
+  );
+}
+
+function TourDomain() {
+  const domain = useItem(selectedDomain) ?? 'free';
+  const domains = useItem(customDomains) ?? {};
+  return (
+    <section class="tour__box">
+      <h2 class="tour__title">What do you write about?</h2>
+      <p class="body body--sm">A Domain adds the words that are sensitive in your work. Fnr, cards, email, phone and names are always checked.</p>
+      <label for="domain" class="label">
+        Domain
+      </label>
+      <DomainSelect domain={domain} domains={domains} />
+      <p class="hint">
+        {isBuiltInDomain(domain) ? BUILT_IN_DOMAIN_INFO[domain].about : 'Your own words, plus the Base checks.'}
+      </p>
+    </section>
+  );
+}
+
+/** Where Ghost Agent works: every site, or only listed ones (the `sites` list in Settings). */
+function TourSites() {
+  const list = useItem(sites) ?? ['*'];
+  const everywhere = list.includes('*');
+  const chosen = list.filter((s) => s !== '*');
+  return (
+    <section class="tour__box" role="radiogroup" aria-labelledby="where-title">
+      <h2 id="where-title" class="tour__title">
+        Where should it work?
+      </h2>
+      <label class="tour__choice">
+        <input type="radio" name="where" checked={everywhere} onChange={checkEverywhere} />
+        <span>
+          <span class="heading">Everywhere</span>
+          <span class="hint">Every site you type on.</span>
+        </span>
+      </label>
+      <label class="tour__choice">
+        <input type="radio" name="where" checked={!everywhere} onChange={checkOnlyChosenSites} />
+        <span>
+          <span class="heading">Only sites I choose</span>
+          <span class="hint">{(everywhere || chosen.length === 0 ? AI_CHAT_SITES : chosen).join(', ')}</span>
+        </span>
+      </label>
+      <p class="hint">
+        Change it any time in Settings. Pin Ghost Agent from the puzzle piece, then paste something into ChatGPT.
+      </p>
+    </section>
   );
 }
 
