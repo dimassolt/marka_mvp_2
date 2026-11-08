@@ -211,7 +211,7 @@ function Main({ onNewDomain, onSettings }: { onNewDomain: () => void; onSettings
         </span>
         <button
           type="button"
-          class="switch"
+          class={toggled ? 'switch switch--animate' : 'switch'}
           role="switch"
           aria-checked={on}
           aria-label={`On for ${host}`}
@@ -287,6 +287,8 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
   const shown = words.filter((w) => w.toLowerCase().includes(query.trim().toLowerCase()));
   const list = useRef<HTMLUListElement>(null);
   const [overflows, setOverflows] = useState(false);
+  // The word just submitted, new or already there; its chip gets scrolled into view.
+  const [landed, setLanded] = useState<string | null>(null);
 
   // Search shows only once the full list scrolls; while filtered, keep the last answer.
   useLayoutEffect(() => {
@@ -295,9 +297,19 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
     setOverflows(!!ul && ul.scrollHeight > ul.clientHeight);
   }, [words, query]);
 
+  // Waits until the word is in the list, since a new one arrives a render later. A search that
+  // filters it out leaves nothing to scroll to.
+  useLayoutEffect(() => {
+    if (!landed || !words.includes(landed)) return;
+    const i = shown.indexOf(landed);
+    if (i >= 0) list.current?.children[i]?.scrollIntoView({ block: 'nearest' });
+    setLanded(null);
+  }, [landed, words]);
+
   const submit = async (e: Event) => {
     e.preventDefault();
     await addWord(domain, word);
+    setLanded(word.trim());
     setWord('');
   };
 

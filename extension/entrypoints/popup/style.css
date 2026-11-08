@@ -302,7 +302,11 @@ svg {
   white-space: nowrap;
 }
 
-/* Switch: 44×26 pill, black when on, 20px knob */
+/*
+ * Switch: 44×26 pill, black when on, 20px knob. The knob slides 18px (44 − 2×3 padding − 20).
+ * It moves and changes colour only after a click: the popup's first frame always reads "off"
+ * until the site lists load, and that change shouldn't play on every open.
+ */
 
 .switch {
   display: flex;
@@ -317,8 +321,16 @@ svg {
 }
 
 .switch[aria-checked='true'] {
-  justify-content: flex-end;
   background: var(--color-accent);
+}
+
+.switch:not(.switch--animate) {
+  transition: none;
+}
+
+/* The colour change keeps pace with the knob. */
+.switch--animate {
+  transition: background-color 150ms ease-in-out;
 }
 
 .switch:hover:not(:disabled) {
@@ -334,6 +346,14 @@ svg {
   height: 20px;
   border-radius: var(--radius-pill);
   background: var(--color-paper-2);
+}
+
+.switch[aria-checked='true'] .switch__knob {
+  transform: translateX(18px);
+}
+
+.switch--animate .switch__knob {
+  transition: transform 150ms ease-in-out;
 }
 
 /* Outlined icon button: settings (36px) and New Domain (42px) */

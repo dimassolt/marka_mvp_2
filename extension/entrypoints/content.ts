@@ -559,6 +559,13 @@ const UI_STYLES = `
     border-radius: 2px; background: var(--color-stamp-soft); color: var(--color-stamp);
     box-shadow: var(--shadow-lift); font: 500 var(--text-xs) var(--font-outlier);
   }
+  /*
+   * The Card fades in, then its stamp 100ms later, so it lands second even when the
+   * Placeholder reply comes back at once. backwards keeps the stamp hidden during that wait.
+   */
+  @keyframes fade-in { from { opacity: 0; } }
+  .card { animation: fade-in 150ms ease-out; }
+  .stamp { animation: fade-in 150ms ease-out 100ms backwards; }
   .tear { border-top: var(--rule-tear) dashed var(--color-rule); }
   .actions { display: flex; gap: 6px; padding: 14px 14px 16px; }
   .actions button { height: 38px; border-radius: var(--radius-control); transition: transform var(--dur-micro) var(--ease-out); }
@@ -592,7 +599,7 @@ const UI_STYLES = `
   .menu button:hover, .menu button:focus-visible { background: var(--color-paper-3); }
   .menu .count { font-family: var(--font-outlier); color: var(--color-stamp); }
 
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 `;
 
 /** The input field around `target`: a <textarea>, or the outermost contenteditable element. */
