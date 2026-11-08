@@ -11,8 +11,12 @@ from ghost_engine.model_download import ModelDownload, State, gliner_download
 from ghost_engine.rephrase import (
     RephraseFailedError,
     RephraseInputError,
+    RephraseModelFailedError,
     RephraseModelMissingError,
     Rephraser,
+)
+from ghost_engine.rephrase import (
+    State as RephraseState,
 )
 from ghost_engine.rephrase_model import rephraser as default_rephraser
 
@@ -129,7 +133,20 @@ def rephrase(request: RephraseRequest, rephraser: RephraserDep) -> RephraseRespo
         raise HTTPException(status_code=422, detail=str(error)) from None
     except RephraseModelMissingError:
         raise HTTPException(status_code=503, detail="rephrase model missing") from None
+    except RephraseModelFailedError:
+        raise HTTPException(status_code=503, detail="rephrase model failed to load") from None
     except RephraseFailedError:
         # Every attempt still revealed something. The Card suggests Hide instead.
         raise HTTPException(status_code=409, detail="could not rephrase safely") from None
     return RephraseResponse(text=text)
+
+
+class RephraseModelOut(BaseModel):
+    state: RephraseState
+    error: str | None
+
+
+@app.get("/rephrase/model")
+def rephrase_model_status(rephraser: RephraserDep) -> RephraseModelOut:
+    status = rephraser.status()
+    return RephraseModelOut(state=status.state, error=status.error)

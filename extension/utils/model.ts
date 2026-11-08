@@ -42,3 +42,23 @@ export const MODEL_SIZE_MB = 600;
 export function progressPercent(downloadedMb: number): number {
   return Math.min(99, Math.round((downloadedMb / MODEL_SIZE_MB) * 100));
 }
+
+/**
+ * The rephrase model (Gemma 4 E2B), as GET /rephrase/model returns it (docs/spec.md §2).
+ * The Engine starts loading it at startup; `idle` means no load has started yet.
+ */
+export interface RephraseModelStatus {
+  state: 'idle' | 'loading' | 'ready' | 'missing' | 'failed';
+  /** Why the model failed to load. */
+  error: string | null;
+}
+
+/** Asks the Engine's GET /rephrase/model. Null when the Engine is down or too old to know it. */
+export async function rephraseModelStatus(): Promise<RephraseModelStatus | null> {
+  try {
+    const response = await fetch(`${ENGINE_URL}/rephrase/model`);
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
+}

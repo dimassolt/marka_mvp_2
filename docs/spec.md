@@ -94,7 +94,15 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 - The answer is in the same language as `sentence` (Norwegian or English, told by its common words).
 - A rewrite that breaks one of these rules gets one more try, with the problems named. A safe rewrite with new keyword-list words (`sykdom`) gets one more try for plainer words; the one with fewer wins, and the Extension underlines them after Accept.
 - `text` is the rewritten sentence only: no explanation, quotes, label or `<think>` tags, and no line break.
-- `422`: `sentence` is empty, longer than 1000 characters, or `domain` is unknown. `503`: the model is not downloaded. `409`: no try was safe; the Card suggests Hide.
+- `422`: `sentence` is empty, longer than 1000 characters, or `domain` is unknown. `503`: the model is not downloaded or failed to load. `409`: no try was safe; the Card suggests Hide.
+- When the model has loaded, the Engine's log says `Rephrase model ready (loaded in 1.5 s)`; if it is missing or fails, the log says so.
+
+### `GET /rephrase/model`
+
+The rephrase model on this machine: `200 {"state": "ready", "error": null}`.
+
+- `state` is `idle` (no load started yet), `loading`, `ready`, `missing` (not downloaded) or `failed`.
+- `error` says why loading failed, when `state` is `failed`.
 
 ## 3. Extension behaviour
 
@@ -148,7 +156,7 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 3. The Card shows the new sentence with **Accept** and **Reject**.
 4. Accept replaces the sentence through the editor's insert command, like Hide, and triggers one normal scan. New Findings are underlined as usual; nothing is rephrased automatically. If the user changed the sentence meanwhile, Accept changes nothing and the Card says "The text changed. Try again."
 5. Reject closes the Card and changes nothing.
-6. Without a rewrite, the Card says why above Hide, Rephrase and Ignore: "Engine not running", "Rephrase model not downloaded. Run make start." (`503`), "Couldn't rephrase without sensitive data. Use Hide." (`409`), "Rephrasing took too long. Try again." (15 s), or "Couldn't rephrase. Try again."
+6. Without a rewrite, the Card says why above Hide, Rephrase and Ignore: "Engine not running", "Rephrase model isn't ready. See Settings in the popup." (`503`), "Couldn't rephrase without sensitive data. Use Hide." (`409`), "Rephrasing took too long. Try again." (15 s), "Couldn't rephrase. Try again.", or, when the background worker doesn't answer (the extension was rebuilt but not reloaded), "Ghost Agent was updated. Reload it on the extensions page, then this tab."
 
 ### Restore
 
@@ -162,6 +170,10 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 - While `GET /model` isn't `ready`, the popup shows "Names and places are off" under the site row, with a **Download model** button (`POST /model/download`). While it downloads, a progress bar and `312 of about 600 MB`, refreshed every 2 s. If it fails, the error and **Try again**.
 - Settings has a **Name model** section with its state: Off, Downloading, Downloaded or Failed.
 - The new model is used from the next `/detect`; the Engine doesn't need a restart.
+
+### Rephrase model
+
+- Settings has a **Rephrase model** section under Name model, from `GET /rephrase/model`: Not loaded, Loading, Ready, Not downloaded or Failed, with a line on what it means. While it is Not loaded or Loading, the popup asks again every 2 s. A failed load shows its error.
 
 ### Engine down
 

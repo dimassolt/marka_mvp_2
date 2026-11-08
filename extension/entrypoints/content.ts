@@ -29,11 +29,12 @@ const CARD_WIDTH_PX = 300;
 /** What the Card says when there is no rephrased sentence (docs/spec.md §3, Engine down). */
 const REPHRASE_FAILURES: Record<RephraseFailure, string> = {
   'engine-down': 'Engine not running',
-  'model-missing': 'Rephrase model not downloaded. Run make start.',
+  'model-missing': "Rephrase model isn't ready. See Settings in the popup.",
   unsafe: "Couldn't rephrase without sensitive data. Use Hide.",
   timeout: 'Rephrasing took too long. Try again.',
   failed: "Couldn't rephrase. Try again.",
 };
+const STALE_EXTENSION = 'Ghost Agent was updated. Reload it on the extensions page, then this tab.';
 
 /** An invisible copy of a <textarea>'s text laid over it: highlights can't reach inside a textarea. */
 interface Overlay {
@@ -264,11 +265,14 @@ export default defineContentScript({
       rephrasing = { id, field: u.field, start, end, sentence: text.slice(start, end) };
       pinned = true; // the answer may take seconds; the Card stays while the pointer moves
       ui.showRephrasing();
-      const result: RephraseResult = await browser.runtime
+      const result: RephraseResult | undefined = await browser.runtime
         .sendMessage({ type: 'rephrase', sentence: rephrasing.sentence })
-        .catch(() => ({ ok: false, reason: 'failed' }));
+        .catch(() => undefined);
       if (rephrasing?.id !== id) return; // the Card closed while the Engine worked
-      if (!result?.ok) return ui.showRephraseFailure(REPHRASE_FAILURES[result?.reason ?? 'failed']);
+      // No answer: the background worker is older than this page's script (the extension was
+      // rebuilt but not reloaded), or the extension was reloaded under this tab.
+      if (!result) return ui.showRephraseFailure(STALE_EXTENSION);
+      if (!result.ok) return ui.showRephraseFailure(REPHRASE_FAILURES[result.reason]);
       rephrasing.text = result.text;
       ui.showPreview(result.text);
     }

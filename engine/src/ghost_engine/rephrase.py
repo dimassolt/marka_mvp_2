@@ -10,10 +10,13 @@ Extension would underline it after Accept (docs/spec.md §3), so the model is as
 plainer words; the rewrite with the fewest such words wins.
 """
 
-import contextlib
+import logging
 import re
 import threading
+import time
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+from typing import Literal
 
 from ghost_engine import service
 from ghost_engine.findings import Finding, category_info
@@ -91,12 +94,31 @@ _ENGLISH_WORDS = frozenset(
 )
 
 
+# uvicorn prints this logger, so the Engine's terminal shows when the model is ready.
+# Never log user text here (ADR-0001).
+log = logging.getLogger("uvicorn.error")
+
+State = Literal["idle", "loading", "ready", "missing", "failed"]
+
+
+@dataclass(frozen=True)
+class RephraseStatus:
+    """The model's state for GET /rephrase/model: idle until the first load starts."""
+
+    state: State
+    error: str | None = None
+
+
 class RephraseInputError(ValueError):
     """The sentence is empty or longer than MAX_CHARS."""
 
 
 class RephraseModelMissingError(RuntimeError):
     """The rephrase model has not been downloaded."""
+
+
+class RephraseModelFailedError(RuntimeError):
+    """The rephrase model is on disk but could not be loaded."""
 
 
 class RephraseFailedError(RuntimeError):
@@ -115,14 +137,26 @@ class Rephraser:
         self._detect = detect
         self._attempts = attempts
         self._model: ChatModel | None = None
+        self._state: State = "idle"
+        self._error: str | None = None
         self._load_lock = threading.Lock()
         # Requests run in a thread pool, and a llama.cpp context serves one call at a time.
         self._chat_lock = threading.Lock()
 
+    def status(self) -> RephraseStatus:
+        return RephraseStatus(self._state, self._error)
+
     def warm(self) -> None:
         """Load the model now, so the first Rephrase click doesn't wait for it."""
-        with contextlib.suppress(RephraseModelMissingError):
+        started = time.monotonic()
+        try:
             self._get_model()
+        except RephraseModelMissingError as error:
+            log.warning("Rephrase model missing: %s", error)
+        except RephraseModelFailedError as error:
+            log.error("Rephrase model failed to load: %s", error)
+        else:
+            log.info("Rephrase model ready (loaded in %.1f s)", time.monotonic() - started)
 
     def rephrase(self, sentence: str, domain: str, words: Sequence[str] = ()) -> str:
         if not sentence.strip():
@@ -162,8 +196,22 @@ class Rephraser:
         if self._model is None:
             with self._load_lock:
                 if self._model is None:
-                    self._model = self._load_model()
+                    self._model = self._load()
         return self._model
+
+    def _load(self) -> ChatModel:
+        """One load attempt. A missing or broken model is tried again on the next call."""
+        self._state, self._error = "loading", None
+        try:
+            model = self._load_model()
+        except RephraseModelMissingError:
+            self._state = "missing"
+            raise
+        except Exception as error:  # llama.cpp can't read the file, too little memory, ...
+            self._state, self._error = "failed", str(error) or type(error).__name__
+            raise RephraseModelFailedError(self._error) from error
+        self._state = "ready"
+        return model
 
     def _problems(
         self, text: str, domain: str, words: Sequence[str], keep: set[str], found: list[str]

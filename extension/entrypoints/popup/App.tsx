@@ -5,8 +5,10 @@ import {
   downloadModel,
   MODEL_SIZE_MB,
   modelStatus,
+  rephraseModelStatus,
   progressPercent,
   type ModelStatus,
+  type RephraseModelStatus,
 } from '@/utils/model';
 import {
   addSite,
@@ -69,6 +71,20 @@ function useModelStatus(): [ModelStatus | null, () => void] {
     downloadModel().then(setStatus);
   };
   return [status, download];
+}
+
+/** The Engine's rephrase model. Asks again every 2 s until it is loaded or has failed. */
+function useRephraseModelStatus(): RephraseModelStatus | null {
+  const [status, setStatus] = useState<RephraseModelStatus | null>(null);
+  useEffect(() => {
+    rephraseModelStatus().then(setStatus);
+  }, []);
+  useEffect(() => {
+    if (status?.state !== 'idle' && status?.state !== 'loading') return;
+    const timer = setTimeout(() => rephraseModelStatus().then(setStatus), 2000);
+    return () => clearTimeout(timer);
+  }, [status]);
+  return status;
 }
 
 export function App() {
@@ -376,6 +392,7 @@ function Settings({ onBack }: { onBack: () => void }) {
   const paused = useItem(pausedSites) ?? [];
   const [site, setSite] = useState('');
   const [model, download] = useModelStatus();
+  const rephraseModel = useRephraseModelStatus();
 
   const submit = async (e: Event) => {
     e.preventDefault();
@@ -444,6 +461,16 @@ function Settings({ onBack }: { onBack: () => void }) {
           )}
         </section>
       )}
+      {rephraseModel && (
+        <section class="section">
+          <div class="heading-row">
+            <h2 class="heading">Rephrase model</h2>
+            <span class="pill">{REPHRASE_PILL[rephraseModel.state]}</span>
+          </div>
+          <p class="hint">{REPHRASE_HINT[rephraseModel.state]}</p>
+          {rephraseModel.error && <p class="hint mono">{rephraseModel.error}</p>}
+        </section>
+      )}
       {paused.length > 0 && (
         <section class="section">
           <div class="sites-head">
@@ -473,6 +500,24 @@ function Settings({ onBack }: { onBack: () => void }) {
     </main>
   );
 }
+
+/** The Rephrase model's state in Settings, next to its heading. */
+const REPHRASE_PILL: Record<RephraseModelStatus['state'], string> = {
+  idle: 'Not loaded',
+  loading: 'Loading',
+  ready: 'Ready',
+  missing: 'Not downloaded',
+  failed: 'Failed',
+};
+
+/** What each state means for the user, under the heading. */
+const REPHRASE_HINT: Record<RephraseModelStatus['state'], string> = {
+  idle: 'Gemma 4 rewrites a sentence without its sensitive parts. It loads when the Engine starts.',
+  loading: 'Gemma 4 is loading. Rephrase works in a few seconds.',
+  ready: 'Gemma 4 rewrites a sentence without its sensitive parts. It runs on this computer.',
+  missing: 'Rephrase is off. Run make start to download Gemma 4, about 3.1 GB, once.',
+  failed: 'Rephrase is off. Gemma 4 could not load. Restart the Engine.',
+};
 
 /** The Name model's state in Settings, next to its heading. */
 const MODEL_PILL: Record<ModelStatus['state'], string> = {

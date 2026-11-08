@@ -10,7 +10,9 @@ from ghost_engine.model_download import ModelDownload
 from ghost_engine.rephrase import (
     RephraseFailedError,
     RephraseInputError,
+    RephraseModelFailedError,
     RephraseModelMissingError,
+    RephraseStatus,
 )
 
 client = TestClient(app)
@@ -215,3 +217,28 @@ def test_rephrase_errors_map_to_status_codes(
     response = client.post("/rephrase", json={"sentence": "Kari har diabetes."})
 
     assert response.status_code == status
+
+
+def test_rephrase_model_reports_the_state_and_error() -> None:
+    class Status:
+        def status(self) -> RephraseStatus:
+            return RephraseStatus("failed", "not a GGUF file")
+
+    app.dependency_overrides[rephraser] = lambda: Status()
+    try:
+        response = client.get("/rephrase/model")
+    finally:
+        app.dependency_overrides.pop(rephraser)
+
+    assert (response.status_code, response.json()) == (
+        200,
+        {"state": "failed", "error": "not a GGUF file"},
+    )
+
+
+def test_a_rephrase_model_that_failed_to_load_answers_503(fake_rephraser: FakeRephraser) -> None:
+    fake_rephraser.result = RephraseModelFailedError("not a GGUF file")
+
+    response = client.post("/rephrase", json={"sentence": "Kari har diabetes."})
+
+    assert response.status_code == 503

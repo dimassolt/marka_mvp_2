@@ -105,7 +105,9 @@ export async function rephrase(sentence: string): Promise<RephraseResult> {
       signal: AbortSignal.timeout(REPHRASE_TIMEOUT_MS),
     });
     await engineRunning.setValue(true);
-    // 503: the model isn't downloaded. 409: every rewrite still revealed something.
+    // Only the status: a 422 body can echo the sentence, and user text is never logged.
+    if (!response.ok) log(`/rephrase answered ${response.status}`);
+    // 503: the model isn't downloaded or didn't load. 409: every rewrite still revealed something.
     if (response.status === 503) return { ok: false, reason: 'model-missing' };
     if (response.status === 409) return { ok: false, reason: 'unsafe' };
     if (!response.ok) return { ok: false, reason: 'failed' };

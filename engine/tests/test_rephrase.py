@@ -1,5 +1,6 @@
 """Rephrase use case (docs/spec.md §2, POST /rephrase) with a scripted model and Detector."""
 
+import logging
 from collections.abc import Sequence
 
 import pytest
@@ -10,8 +11,10 @@ from ghost_engine.rephrase import (
     Message,
     RephraseFailedError,
     RephraseInputError,
+    RephraseModelFailedError,
     RephraseModelMissingError,
     Rephraser,
+    RephraseStatus,
 )
 from ghost_engine.service import UnknownDomainError
 
@@ -276,3 +279,62 @@ def test_a_new_name_finding_does_not_ask_for_plainer_words() -> None:
 
     assert rewrite == "En kvinne har en helseutfordring."
     assert len(model.prompts) == 1
+
+
+# The model's state, for GET /rephrase/model and the popup -------------------------------
+
+
+def test_the_state_is_idle_before_the_model_is_loaded() -> None:
+    assert make(ScriptedModel()).status().state == "idle"
+
+
+def test_the_state_is_ready_once_the_model_is_loaded() -> None:
+    rephraser = make(ScriptedModel())
+
+    rephraser.warm()
+
+    assert rephraser.status().state == "ready"
+
+
+def test_the_state_is_missing_when_the_model_is_not_downloaded() -> None:
+    def load() -> ScriptedModel:
+        raise RephraseModelMissingError("not downloaded")
+
+    rephraser = Rephraser(load, detect=words_detector())
+    rephraser.warm()
+
+    assert rephraser.status().state == "missing"
+
+
+def test_the_state_is_failed_with_the_reason_when_loading_breaks() -> None:
+    def load() -> ScriptedModel:
+        raise RuntimeError("not a GGUF file")
+
+    rephraser = Rephraser(load, detect=words_detector())
+    rephraser.warm()
+
+    assert rephraser.status() == RephraseStatus("failed", "not a GGUF file")
+    with pytest.raises(RephraseModelFailedError):
+        rephraser.rephrase(SENTENCE, "health")
+
+
+def test_the_state_is_loading_while_the_model_loads() -> None:
+    states: list[str] = []
+    rephraser: Rephraser
+
+    def load() -> ScriptedModel:
+        states.append(rephraser.status().state)
+        return ScriptedModel()
+
+    rephraser = Rephraser(load, detect=words_detector())
+    rephraser.warm()
+
+    assert states == ["loading"]
+
+
+def test_warm_says_in_the_log_when_the_model_is_ready(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO, logger="uvicorn.error")
+
+    make(ScriptedModel()).warm()
+
+    assert "Rephrase model ready" in caplog.text
