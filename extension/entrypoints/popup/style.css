@@ -78,6 +78,50 @@ svg {
   padding: 16px 16px 12px;
 }
 
+.ghost {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+/*
+ * Off: the sunglasses are hidden, pushed up on top of the head. They sit 8px higher and
+ * lean back 60° around the x axis, turning on the lenses' bottom edge (55% down). So the
+ * brow bar goes back over the head, and perspective() draws it smaller than the lenses' edge.
+ * On: they fade in on the head, then slide down the forehead and stand up flat over the eyes.
+ * Off: they slide back up, then fade out once they are on the head.
+ */
+.ghost__glasses {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 55%;
+  transform: perspective(40px) translateY(0) rotateX(0deg);
+}
+
+.ghost__glasses--off {
+  opacity: 0;
+  transform: perspective(40px) translateY(-8px) rotateX(60deg);
+}
+
+.ghost--animate .ghost__glasses {
+  transition:
+    opacity 150ms ease-out,
+    transform 450ms ease-in-out;
+}
+
+.ghost--animate .ghost__glasses--off {
+  transition:
+    transform 450ms ease-in-out,
+    opacity 150ms ease-in 300ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost--animate .ghost__glasses {
+    transition: none;
+  }
+}
+
 .header--sub {
   gap: 8px;
   padding: 14px 16px;
