@@ -25,6 +25,13 @@ export function pointAt<N>(pieces: Piece<N>[], offset: number, edge: 'start' | '
   return undefined;
 }
 
+/** Where the Finding at [start, end) of `before` starts in `after`. */
+export function movedStart(before: string, after: string, start: number, end: number): number | undefined {
+  if (after.startsWith(before.slice(0, end))) return start;
+  if (after.endsWith(before.slice(start))) return start + after.length - before.length;
+  return undefined;
+}
+
 /** The underline colour of a Finding's group, as the Engine sends it (docs/spec.md §1). Unknown groups are teal. */
 export function colourOf(group?: string): Colour {
   return group === 'id' || group === 'contact' ? group : 'domain';

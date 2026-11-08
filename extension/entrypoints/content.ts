@@ -1,7 +1,7 @@
 import tokens from '@/assets/tokens.css?raw';
 import { engineRunning, type Finding } from '@/utils/engine-status';
 import { customDomains, isSiteOn, pausedSites, selectedDomain, sites } from '@/utils/popup-settings';
-import { colourOf, pointAt, type Colour, type Piece } from '@/utils/underlines';
+import { colourOf, movedStart, pointAt, type Colour, type Piece } from '@/utils/underlines';
 
 /** Scan 1 s after the last keystroke (docs/spec.md §3), so typing doesn't send every word. */
 const TYPING_PAUSE_MS = 1000;
@@ -54,6 +54,8 @@ export default defineContentScript({
     const watched = new WeakSet<HTMLElement>();
     const overlays = new WeakMap<HTMLTextAreaElement, Overlay>();
     const timers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+    // Each field's text as the Extension last saw it: what its underlines' offsets count in.
+    const texts = new WeakMap<HTMLElement, string>();
     // Ignored (Category, value) pairs per field, until the message is sent (spec §3, Ignore).
     const ignored = new WeakMap<HTMLElement, Set<string>>();
     // Off until the site settings are read, so no text reaches the Engine on a site switched off.
@@ -69,9 +71,33 @@ export default defineContentScript({
     // An empty field means the message was sent: its values are flagged again (spec §3, Ignore).
     // Checked on every change, since typing the next message may start before the scan runs.
     const changed = (field: HTMLElement) => {
-      const text = field instanceof HTMLTextAreaElement ? field.value : (field.textContent ?? '');
+      const text = joined(piecesOf(field));
       if (!text.trim()) ignored.delete(field);
+      move(field, text);
       schedule(field, TYPING_PAUSE_MS);
+    };
+
+    // The site rewrites the text as the user types, which empties the underlines' Ranges.
+    // Each Finding the edit didn't touch gets a new Range at its moved place, so underlines
+    // don't blink until the next scan; one the user typed inside waits for that scan.
+    const move = (field: HTMLElement, text: string) => {
+      const before = texts.get(field);
+      texts.set(field, text);
+      const list = underlined.get(field);
+      if (before === undefined || before === text || !list?.length) return;
+      const pieces = piecesOf(field);
+      underlined.set(
+        field,
+        list.filter((u) => {
+          const start = movedStart(before, text, u.start, u.end);
+          const range = start === undefined ? undefined : rangeOf(pieces, start, start + u.value.length);
+          if (start === undefined || !range) return false;
+          // Changed in place, so an open Card keeps pointing at its Finding.
+          Object.assign(u, { start, end: start + u.value.length, range });
+          return true;
+        }),
+      );
+      draw();
     };
 
     // Any change in the field, however the site makes it, schedules a scan.
@@ -127,6 +153,7 @@ export default defineContentScript({
       // The user typed while the Engine answered: these offsets are stale. Scan again.
       if (joined(piecesOf(field)) !== text) return schedule(field, TYPING_PAUSE_MS);
 
+      texts.set(field, text);
       underlined.set(
         field,
         findings.flatMap(({ start, end, category, prefix = 'DATA', name = category, group }) => {
