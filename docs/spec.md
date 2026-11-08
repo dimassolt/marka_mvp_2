@@ -185,6 +185,15 @@ Starts the download in the background, the same file `scripts/fetch_rephrase_mod
 - Rephrase shows "Engine not running" in the Card and changes nothing.
 - There is no backup detection in the Extension.
 
+### Onboarding
+
+- A four-step tour inside the popup, for new users only. A fresh install marks it pending (`tourPending`); an update never does, so people who already use Ghost Agent don't get it. The popup shows it on its next open, until the user clicks Done or Skip. Nothing opens on install. Settings has "Take the welcome tour again", which shows it in the popup again.
+- The tour comes before the Engine-down view, because its second step starts the Engine. The header shows "n of 4"; the footer has Back (Skip on the first step) and the next step.
+  1. **Welcome:** one sentence, then the local promise: checked on this computer, hidden values in memory only, nothing changes until the user clicks.
+  2. **Engine:** a live status, re-checked every 2 s while the Engine is down, with the start command. The user can go on without it. Once it runs and the GLiNER model isn't downloaded, the popup's model box (Download model, then the progress bar) is shown.
+  3. **Domain:** the popup's Domain select and what the chosen Domain checks. It sets `selectedDomain`.
+  4. **Where:** "Everywhere" (`*`, the default) or "Only sites I choose" (starts from chatgpt.com, claude.ai and gemini.google.com; the same `sites` setting as Settings), then how to pin the Extension and try it in ChatGPT. Done clears `tourPending` and shows the normal popup.
+
 ## 4. Acceptance criteria
 
 Every check below uses the demo note in section 5, typed or pasted into ChatGPT's input in Opera, with the Engine running.
