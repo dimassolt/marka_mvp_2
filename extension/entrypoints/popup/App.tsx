@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { checkEngine, engineRunning } from '@/utils/engine-status';
 import {
   downloadModel,
@@ -210,6 +210,15 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
   const [word, setWord] = useState('');
   const [query, setQuery] = useState('');
   const shown = words.filter((w) => w.toLowerCase().includes(query.trim().toLowerCase()));
+  const list = useRef<HTMLUListElement>(null);
+  const [overflows, setOverflows] = useState(false);
+
+  // Search shows only once the full list scrolls; while filtered, keep the last answer.
+  useLayoutEffect(() => {
+    if (query) return;
+    const ul = list.current;
+    setOverflows(!!ul && ul.scrollHeight > ul.clientHeight);
+  }, [words, query]);
 
   const submit = async (e: Event) => {
     e.preventDefault();
@@ -223,7 +232,7 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
         <h2 class="heading">Your words</h2>
         <span class="hint">On this computer</span>
       </div>
-      {words.length > 0 && (
+      {(overflows || query) && (
         <input
           type="search"
           class="input input--search"
@@ -235,7 +244,7 @@ function Words({ domain, words }: { domain: string; words: string[] }) {
       )}
       {words.length > 0 && shown.length === 0 && <p class="hint">No words match.</p>}
       {shown.length > 0 && (
-        <ul class="chips">
+        <ul class="chips" ref={list}>
           {shown.map((w) => (
             <li key={w} class="word">
               <span class="word__text" title={w}>
