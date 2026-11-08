@@ -90,7 +90,7 @@ svg {
  * lean back 60° around the x axis, turning on the lenses' bottom edge (55% down). So the
  * brow bar goes back over the head, and perspective() draws it smaller than the lenses' edge.
  * On: they fade in on the head, then slide down the forehead and stand up flat over the eyes.
- * Off: they slide back up, then fade out once they are on the head.
+ * Off: they vanish at once and .ghost__dust, a copy cut into grains, blows away to the right.
  */
 .ghost__glasses {
   position: absolute;
@@ -111,14 +111,36 @@ svg {
 }
 
 .ghost--animate .ghost__glasses--off {
-  transition:
-    transform 450ms ease-in-out,
-    opacity 150ms ease-in 300ms;
+  transition: none;
+}
+
+/* Overflow shows: the sand blows out of the icon, over the title. */
+.ghost__dust {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Each grain speeds up as it leaves, like sand caught by wind. */
+.ghost__grain {
+  animation: ghost-dust 320ms cubic-bezier(0.55, 0, 1, 0.45) var(--delay) forwards;
+}
+
+@keyframes ghost-dust {
+  to {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ghost--animate .ghost__glasses {
     transition: none;
+  }
+
+  .ghost__dust {
+    display: none;
   }
 }
 

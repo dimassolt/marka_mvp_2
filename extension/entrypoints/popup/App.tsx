@@ -136,6 +136,18 @@ function Ghost({ on, animate }: { on: boolean; animate: boolean }) {
           <filter id="ghost-shadow" x="-20%" y="-20%" width="140%" height="150%">
             <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#1E2330" flood-opacity="0.15" />
           </filter>
+          <g id="ghost-glasses-art" fill="#0A0B0F" stroke="#0A0B0F" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M126 192 C126 180 136 172 150 172 L362 172 C376 172 386 180 386 192" fill="none" stroke-width="16" />
+            <rect x="240" y="170" width="32" height="30" stroke="none" />
+            <path
+              stroke-width="10"
+              d="M134 200 C134 188 142 182 154 182 L236 182 C248 182 254 190 252 202 L246 238 C240 268 220 282 192 282 C162 282 142 266 138 238 Z"
+            />
+            <path
+              stroke-width="10"
+              d="M378 200 C378 188 370 182 358 182 L276 182 C264 182 258 190 260 202 L266 238 C272 268 292 282 320 282 C350 282 370 266 374 238 Z"
+            />
+          </g>
         </defs>
         <use href="#ghost-shape" fill="url(#ghost-body)" filter="url(#ghost-shadow)" />
         <path
@@ -153,27 +165,41 @@ function Ghost({ on, animate }: { on: boolean; animate: boolean }) {
         height={28}
         viewBox="0 0 512 512"
       >
-        <g
-          fill="#0A0B0F"
-          stroke="#0A0B0F"
-          stroke-linejoin="round"
-          stroke-linecap="round"
-        >
-          <path d="M126 192 C126 180 136 172 150 172 L362 172 C376 172 386 180 386 192" fill="none" stroke-width="16" />
-          <rect x="240" y="170" width="32" height="30" stroke="none" />
-          <path
-            stroke-width="10"
-            d="M134 200 C134 188 142 182 154 182 L236 182 C248 182 254 190 252 202 L246 238 C240 268 220 282 192 282 C162 282 142 266 138 238 Z"
-          />
-          <path
-            stroke-width="10"
-            d="M378 200 C378 188 370 182 358 182 L276 182 C264 182 258 190 260 202 L266 238 C272 268 292 282 320 282 C350 282 370 266 374 238 Z"
-          />
-        </g>
+        <use href="#ghost-glasses-art" />
       </svg>
+      {/* Switched off: the glasses crumble into sand that blows away to the right. */}
+      {animate && !on && (
+        <svg class="ghost__dust" width={28} height={28} viewBox="0 0 512 512">
+          {GRAINS.map((g) => (
+            <g key={g.x * 1000 + g.y} class="ghost__grain" style={g.style}>
+              <svg x={g.x} y={g.y} width={GRAIN} height={GRAIN} viewBox={`${g.x} ${g.y} ${GRAIN} ${GRAIN}`}>
+                <use href="#ghost-glasses-art" />
+              </svg>
+            </g>
+          ))}
+        </svg>
+      )}
     </span>
   );
 }
+
+/** One grain of sand: a 16×16 square of the 512 viewBox, about 1px of the 28px ghost. */
+const GRAIN = 16;
+
+/**
+ * The glasses' box (x 118–406, y 162–290) cut into grains. Each blows up and to the right,
+ * about 30° above level; the left side goes first, so the sand sweeps across. Picked once,
+ * so every render matches.
+ */
+const GRAINS = Array.from({ length: 18 * 8 }, (_, i) => {
+  const col = i % 18;
+  const x = 118 + col * GRAIN;
+  const y = 162 + Math.floor(i / 18) * GRAIN;
+  const dx = 120 + Math.random() * 160;
+  const dy = -dx * 0.6 + (Math.random() - 0.5) * 40;
+  const delay = (col / 18) * 150 + Math.random() * 60;
+  return { x, y, style: `--dx: ${dx}px; --dy: ${dy}px; --delay: ${delay}ms` };
+});
 
 function SubHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
