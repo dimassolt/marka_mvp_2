@@ -92,15 +92,6 @@ export const REPHRASE_TIMEOUT_MS = 15_000;
 export type RephraseFailure = 'engine-down' | 'model-missing' | 'unsafe' | 'timeout' | 'failed';
 export type RephraseResult = { ok: true; text: string } | { ok: false; reason: RephraseFailure };
 
-/** What the Card says when there is no rephrased sentence (docs/spec.md §3, Engine down). */
-export const REPHRASE_FAILURES: Record<RephraseFailure, string> = {
-  'engine-down': 'Engine not running',
-  'model-missing': "Rephrase model isn't ready. See Settings in the popup.",
-  unsafe: "Couldn't rephrase without sensitive data. Use Hide.",
-  timeout: 'Rephrasing took too long. Try again.',
-  failed: "Couldn't rephrase. Try again.",
-};
-
 /**
  * Asks the Engine's POST /rephrase to rewrite one sentence in the selected Domain.
  * Never remembered: the user may ask again for another wording.

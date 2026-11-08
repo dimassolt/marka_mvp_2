@@ -1,5 +1,5 @@
 import tokens from '@/assets/tokens.css?raw';
-import { REPHRASE_FAILURES, engineRunning, type Finding, type RephraseResult } from '@/utils/engine-status';
+import { engineRunning, type Finding, type RephraseFailure, type RephraseResult } from '@/utils/engine-status';
 import { customDomains, isSiteOn, pausedSites, selectedDomain, sites } from '@/utils/popup-settings';
 import { sentenceAround } from '@/utils/sentence';
 import { colourOf, movedStart, pointAt, type Colour, type Piece } from '@/utils/underlines';
@@ -26,6 +26,14 @@ const CARD_LINGER_MS = 300;
 const CARD_GAP_PX = 8;
 const CARD_WIDTH_PX = 300;
 
+/** What the Card says when there is no rephrased sentence (docs/spec.md §3, Engine down). */
+const REPHRASE_FAILURES: Record<RephraseFailure, string> = {
+  'engine-down': 'Engine not running',
+  'model-missing': "Rephrase model isn't ready. See Settings in the popup.",
+  unsafe: "Couldn't rephrase without sensitive data. Use Hide.",
+  timeout: 'Rephrasing took too long. Try again.',
+  failed: "Couldn't rephrase. Try again.",
+};
 const STALE_EXTENSION = 'Ghost Agent was updated. Reload it on the extensions page, then this tab.';
 
 /** An invisible copy of a <textarea>'s text laid over it: highlights can't reach inside a textarea. */
