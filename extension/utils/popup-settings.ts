@@ -87,6 +87,11 @@ export async function removeWord(domain: string, word: string): Promise<void> {
   await customDomains.setValue({ ...domains, [domain]: words.filter((w) => w !== word) });
 }
 
+/** On: Enter and the site's Send button wait until every Finding in the field is hidden or ignored. */
+export const blockSend = storage.defineItem<boolean>('local:blockSend', {
+  fallback: false,
+});
+
 /** Sites Ghost Agent checks text on. `*` means every site. */
 export const sites = storage.defineItem<string[]>('local:sites', {
   fallback: ['*'],
