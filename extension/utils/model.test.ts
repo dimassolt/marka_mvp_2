@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { downloadModel, modelStatus, progressPercent } from './model';
+import { downloadModel, modelStatus, progressPercent, rephraseModelStatus } from './model';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -51,5 +51,29 @@ describe('progressPercent', () => {
 
   it('stays below 100 until the Engine says the model is ready', () => {
     expect(progressPercent(640)).toBe(99);
+  });
+});
+
+describe('rephraseModelStatus', () => {
+  it('asks GET /rephrase/model and returns what the Engine says', async () => {
+    const status = { state: 'ready', error: null };
+    const fetch = vi.fn().mockResolvedValue(Response.json(status));
+    vi.stubGlobal('fetch', fetch);
+
+    expect(await rephraseModelStatus()).toEqual(status);
+    expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:8765/rephrase/model');
+  });
+
+  it('is null when the Engine is not running', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    expect(await rephraseModelStatus()).toBeNull();
+  });
+
+  it('is null when the Engine is too old to know /rephrase/model', async () => {
+    const notFound = Response.json({ detail: 'Not Found' }, { status: 404 });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(notFound));
+
+    expect(await rephraseModelStatus()).toBeNull();
   });
 });

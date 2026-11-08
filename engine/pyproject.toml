@@ -8,11 +8,20 @@ dependencies = [
     "fast-gliner>=0.4.1",
     "fastapi>=0.115",
     "huggingface-hub>=0.36",
+    "llama-cpp-python>=0.3.36",
     "uvicorn>=0.32",
 ]
 
 [project.scripts]
 ghost-engine = "ghost_engine.main:run"
+
+[tool.uv]
+# How llama.cpp is built from source:
+# - GGML_NATIVE=OFF: no -mcpu=native. Apple clang on newer Macs (M5) rejects it. Inference runs
+#   on Metal, so the CPU flags barely matter. On x86 (Windows) AVX/AVX2 stay on.
+# - LLAMA_OPENSSL=OFF: no HTTPS in llama.cpp's own model downloader, which we never use
+#   (ADR-0001). It also stops the build linking a wrong-architecture OpenSSL from Homebrew.
+extra-build-variables = { llama-cpp-python = { CMAKE_ARGS = "-DGGML_NATIVE=OFF -DLLAMA_OPENSSL=OFF" } }
 
 [dependency-groups]
 dev = [
@@ -49,6 +58,6 @@ explicit_package_bases = true
 exclude = ["^\\.venv/"]
 
 [[tool.mypy.overrides]]
-# fast_gliner ships no type hints; gliner.py types its use through the EntityModel port.
-module = ["fast_gliner", "fast_gliner.*"]
+# fast_gliner and llama_cpp are typed through ports (EntityModel, ChatModel).
+module = ["fast_gliner", "fast_gliner.*", "llama_cpp", "llama_cpp.*"]
 ignore_missing_imports = true

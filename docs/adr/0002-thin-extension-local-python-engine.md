@@ -1,6 +1,6 @@
 # Thin browser extension over a local Python engine
 
-The detection and rephrasing models we picked (GLiNER through fast_gliner, Qwen3 through llama-cpp-python) are Python, and a browser extension cannot run Python. So the extension only draws highlights and action cards. It calls a Python engine running on the user's machine over localhost HTTP. The engine core is hexagonal: Detectors and the rephraser are swappable adapters behind ports. There is one engine core and two applications on top of it: the **Extension** (Chromium MV3, built now) and the **App** (desktop for macOS and Windows, built only if time allows). Both talk to the same engine, so no detection logic is duplicated.
+The detection and rephrasing models we picked (GLiNER through fast_gliner, Gemma 4 through llama-cpp-python; see ADR-0005) are Python, and a browser extension cannot run Python. So the extension only draws highlights and action cards. It calls a Python engine running on the user's machine over localhost HTTP. The engine core is hexagonal: Detectors and the rephraser are swappable adapters behind ports. There is one engine core and two applications on top of it: the **Extension** (Chromium MV3, built now) and the **App** (desktop for macOS and Windows, built only if time allows). Both talk to the same engine, so no detection logic is duplicated.
 
 ## Considered Options
 

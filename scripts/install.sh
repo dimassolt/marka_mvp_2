@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# First-time setup on macOS or Linux: Engine dependencies, the GLiNER model, the Extension.
+# First-time setup on macOS or Linux: Engine dependencies, the models, the Extension.
 # Run from anywhere: ./scripts/install.sh   Safe to run again; it skips what is done.
 set -euo pipefail
 
@@ -25,6 +25,9 @@ step "Engine: Python dependencies"
 
 step "Engine: GLiNER model (about 600 MB, downloaded once)"
 (cd engine && uv run python scripts/fetch_gliner.py)
+
+step "Engine: rephrase model, Gemma 4 E2B (about 3.1 GB, downloaded once)"
+(cd engine && uv run python scripts/fetch_rephrase_model.py)
 
 step "Extension: npm packages"
 (cd extension && npm install)

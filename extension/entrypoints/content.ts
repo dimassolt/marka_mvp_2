@@ -1,6 +1,7 @@
 import tokens from '@/assets/tokens.css?raw';
-import { engineRunning, type Finding } from '@/utils/engine-status';
+import { engineRunning, type Finding, type RephraseFailure, type RephraseResult } from '@/utils/engine-status';
 import { customDomains, isSiteOn, pausedSites, selectedDomain, sites } from '@/utils/popup-settings';
+import { sentenceAround } from '@/utils/sentence';
 import { colourOf, movedStart, pointAt, type Colour, type Piece } from '@/utils/underlines';
 
 /** Scan 1 s after the last keystroke (docs/spec.md §3), so typing doesn't send every word. */
@@ -24,6 +25,16 @@ const CARD_LINGER_MS = 300;
 /** Room between a Finding and its Card, and between the Card and the window's edge. */
 const CARD_GAP_PX = 8;
 const CARD_WIDTH_PX = 300;
+
+/** What the Card says when there is no rephrased sentence (docs/spec.md §3, Engine down). */
+const REPHRASE_FAILURES: Record<RephraseFailure, string> = {
+  'engine-down': 'Engine not running',
+  'model-missing': "Rephrase model isn't ready. See Settings in the popup.",
+  unsafe: "Couldn't rephrase without sensitive data. Use Hide.",
+  timeout: 'Rephrasing took too long. Try again.',
+  failed: "Couldn't rephrase. Try again.",
+};
+const STALE_EXTENSION = 'Ghost Agent was updated. Reload it on the extensions page, then this tab.';
 
 /** An invisible copy of a <textarea>'s text laid over it: highlights can't reach inside a textarea. */
 interface Overlay {
@@ -218,12 +229,18 @@ export default defineContentScript({
     let open: Underline | null = null;
     let pinned = false;
     let lingerTimer: ReturnType<typeof setTimeout> | undefined;
+    // The sentence being rephrased from the open Card, and its rewrite once the Engine answers.
+    // `id` tells a late answer for a Card that has since closed from the current one.
+    let rephrasing: { id: number; field: HTMLElement; start: number; end: number; sentence: string; text?: string } | null =
+      null;
+    let rephraseCount = 0;
 
     const openCard = (u: Underline) => {
       clearTimeout(lingerTimer);
       const reopened = open && sameFinding(open, u);
       open = u;
       if (reopened) return;
+      rephrasing = null; // another Finding's Card: a late rewrite must not land on it
       wake();
       ui.showCard(u);
       browser.runtime
@@ -235,10 +252,48 @@ export default defineContentScript({
       clearTimeout(lingerTimer);
       open = null;
       pinned = false;
+      rephrasing = null;
       ui.hideCard();
     };
 
+    /** Rephrase (spec §3): the sentence around the Finding goes to the Engine; the Card waits. */
+    async function rephrase(u: Underline) {
+      const text = joined(piecesOf(u.field));
+      if (text.slice(u.start, u.end) !== u.value) return ui.showRephraseFailure('The text changed. Try again.');
+      const { start, end } = sentenceAround(text, u.start, u.end);
+      const id = ++rephraseCount;
+      rephrasing = { id, field: u.field, start, end, sentence: text.slice(start, end) };
+      pinned = true; // the answer may take seconds; the Card stays while the pointer moves
+      ui.showRephrasing();
+      const result: RephraseResult | undefined = await browser.runtime
+        .sendMessage({ type: 'rephrase', sentence: rephrasing.sentence })
+        .catch(() => undefined);
+      if (rephrasing?.id !== id) return; // the Card closed while the Engine worked
+      // No answer: the background worker is older than this page's script (the extension was
+      // rebuilt but not reloaded), or the extension was reloaded under this tab.
+      if (!result) return ui.showRephraseFailure(STALE_EXTENSION);
+      if (!result.ok) return ui.showRephraseFailure(REPHRASE_FAILURES[result.reason]);
+      rephrasing.text = result.text;
+      ui.showPreview(result.text);
+    }
+
+    /** Accept replaces the sentence like typing, then scans once; nothing is rephrased again. */
+    function accept() {
+      if (!rephrasing?.text) return;
+      const { field, start, end, sentence, text } = rephrasing;
+      // The user typed since: the sentence has moved, so the rewrite can't go in its place.
+      if (joined(piecesOf(field)).slice(start, end) !== sentence) {
+        return ui.showRephraseFailure('The text changed. Try again.');
+      }
+      replace(field, piecesOf(field), start, end, text);
+      closeCard();
+      schedule(field, 0);
+    }
+
     ui.onAction(async (action) => {
+      if (action === 'rephrase') return open && rephrase(open);
+      if (action === 'accept') return accept();
+      if (action === 'reject') return closeCard();
       const all = current ? (underlined.get(current) ?? []) : [];
       try {
         if (action === 'hide' && open) await hide(open.field, [open]);
@@ -429,7 +484,7 @@ function replace(field: HTMLElement, pieces: Piece<Text>[], start: number, end: 
   document.execCommand('insertText', false, text);
 }
 
-type Action = 'hide' | 'ignore' | 'hide-all' | 'ignore-all';
+type Action = 'hide' | 'rephrase' | 'accept' | 'reject' | 'ignore' | 'hide-all' | 'ignore-all';
 
 /**
  * The Card and the Ghost bar, in a Shadow DOM at the end of <body>, so the site's styles and
@@ -448,9 +503,17 @@ function createUi() {
         <span class="stamp" hidden></span>
       </div>
       <div class="tear"></div>
-      <div class="actions">
+      <div class="rephrase" hidden>
+        <p class="status" role="status"></p>
+        <p class="preview" hidden></p>
+        <div class="actions decide" hidden>
+          <button type="button" class="primary" data-action="accept">Accept</button>
+          <button type="button" class="text" data-action="reject">Reject</button>
+        </div>
+      </div>
+      <div class="actions choices">
         <button type="button" class="primary" data-action="hide">Hide</button>
-        <button type="button" class="secondary" disabled title="Coming soon">Rephrase</button>
+        <button type="button" class="secondary" data-action="rephrase">Rephrase</button>
         <button type="button" class="text" data-action="ignore">Ignore</button>
       </div>
       <p class="error" role="alert" hidden>Couldn't hide. Try again.</p>
@@ -471,6 +534,11 @@ function createUi() {
   const bar = $('.bar');
   const menu = $('.menu');
   const tab = $('.tab');
+  const choices = $('.choices');
+  const rephraseBox = $('.rephrase');
+  const status = $('.status');
+  const preview = $('.preview');
+  const decide = $('.decide');
   const errors = root.querySelectorAll<HTMLElement>('.error');
   const showErrors = (show: boolean) => errors.forEach((e) => (e.hidden = !show));
   const setMenu = (isOpen: boolean) => {
@@ -497,7 +565,37 @@ function createUi() {
       $('.value').textContent = u.value;
       stamp.hidden = true;
       showErrors(false);
+      rephraseBox.hidden = true;
+      choices.hidden = false;
       card.hidden = false;
+    },
+    /** Rephrasing: the buttons give way to the waiting line (docs/design.md, Card states). */
+    showRephrasing() {
+      showErrors(false);
+      choices.hidden = true;
+      rephraseBox.hidden = false;
+      status.textContent = 'Rephrasing…';
+      status.classList.remove('failed');
+      status.hidden = false;
+      preview.hidden = true;
+      decide.hidden = true;
+    },
+    /** Preview: the new sentence, with Accept and Reject. */
+    showPreview(text: string) {
+      status.hidden = true;
+      preview.textContent = text;
+      preview.hidden = false;
+      decide.hidden = false;
+    },
+    /** Why there is no rewrite. Hide, Rephrase and Ignore come back, so the user can go on. */
+    showRephraseFailure(message: string) {
+      rephraseBox.hidden = false;
+      status.textContent = message;
+      status.classList.add('failed');
+      status.hidden = false;
+      preview.hidden = true;
+      decide.hidden = true;
+      choices.hidden = false;
     },
     /** Under the Card's buttons and the menu's: only the one on screen is seen. */
     showError() {
@@ -575,6 +673,14 @@ const UI_STYLES = `
   .secondary { padding: 0 12px; border: 1px solid var(--color-rule); background: var(--color-paper-2); color: var(--color-ink); box-shadow: var(--shadow-mould-clear); }
   .text { padding: 0 6px; border: 0; background: transparent; color: var(--color-muted); }
   .text:hover { color: var(--color-ink); }
+  .rephrase { display: flex; flex-direction: column; gap: var(--space-xs); padding: 14px 16px 0; }
+  .rephrase .actions { padding: 6px 0 16px; }
+  .status { margin: 0; color: var(--color-muted); }
+  .status.failed { color: var(--color-cat-id-ink); font-size: var(--text-xs); }
+  .preview {
+    margin: 0; padding: 10px 12px; border-radius: var(--radius-control);
+    background: var(--color-paper-3); overflow-wrap: anywhere;
+  }
   .error { margin: 0; padding: 0 16px 14px; color: var(--color-cat-id-ink); font-size: var(--text-xs); }
   .menu .error { padding: 4px 10px; }
 

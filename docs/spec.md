@@ -84,13 +84,25 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 { "sentence": "Kari, 34 år, jobber som lærer i Bærum og har diabetes type 1.", "domain": "health" }
 ```
 ```json
-{ "text": "En kvinne i 30-årene som jobber i skolen, har en kronisk sykdom." }
+{ "text": "En kvinne i 30-årene jobber som lærer og har en helseutfordring." }
 ```
 
-- The model is Qwen3 1.7B Q4_K_M through llama-cpp-python. It is loaded when the Engine starts and is never unloaded during the hackathon. Backups if its Norwegian is weak: Borealis-Open-1B, then EuroLLM-1.7B.
-- The answer is in the same language as `sentence`.
-- Placeholders already in `sentence` (e.g. `[PERSON_1]`) appear unchanged in `text`.
-- `text` is the rewritten sentence only, with no explanation or quotes. Empty `<think></think>` tags are stripped.
+- The model is Gemma 4 E2B (instruction-tuned, Q4_K_M GGUF) through llama-cpp-python ([ADR-0005](adr/0005-gemma-4-rephrases-and-code-checks-it.md)). `GHOST_REPHRASE_MODEL=gemma-4-e4b` uses E4B instead. The Engine starts loading it in the background at startup and never unloads it. `scripts/fetch_rephrase_model.py` downloads it (about 3.1 GB); `/rephrase` never downloads.
+- `domain` and `words` work as in `/detect`. Without `domain`, the Engine uses `"free"`.
+- The model is told the Findings `/detect` gives for `sentence`. Its answer must not contain any of their values, in any case or another form of the word (same first 5 letters, e.g. `sykemeldt` and `sykemelding`), and no new `id`-group Finding, `email` or `phone`.
+- Placeholders already in `sentence` (e.g. `[PERSON_1]`) appear unchanged in `text`, and `text` has no other Placeholder.
+- The answer is in the same language as `sentence` (Norwegian or English, told by its common words).
+- A rewrite that breaks one of these rules gets one more try, with the problems named. A safe rewrite with new keyword-list words (`sykdom`) gets one more try for plainer words; the one with fewer wins, and the Extension underlines them after Accept.
+- `text` is the rewritten sentence only: no explanation, quotes, label or `<think>` tags, and no line break.
+- `422`: `sentence` is empty, longer than 1000 characters, or `domain` is unknown. `503`: the model is not downloaded or failed to load. `409`: no try was safe; the Card suggests Hide.
+- When the model has loaded, the Engine's log says `Rephrase model ready (loaded in 1.5 s)`; if it is missing or fails, the log says so.
+
+### `GET /rephrase/model`
+
+The rephrase model on this machine: `200 {"state": "ready", "error": null}`.
+
+- `state` is `idle` (no load started yet), `loading`, `ready`, `missing` (not downloaded) or `failed`.
+- `error` says why loading failed, when `state` is `failed`.
 
 ## 3. Extension behaviour
 
@@ -140,9 +152,11 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 ### Rephrase
 
 1. The sentence is the text around the Finding, up to the nearest `.`, `!`, `?` or line break on each side.
-2. The Card shows "Rephrasing…" while it waits, for at most 15 seconds.
+2. The Card shows "Rephrasing…" while it waits, for at most 15 seconds. The Card stays open meanwhile, as if clicked.
 3. The Card shows the new sentence with **Accept** and **Reject**.
-4. Accept replaces the sentence and triggers one normal scan. New Findings are underlined as usual; nothing is rephrased automatically.
+4. Accept replaces the sentence through the editor's insert command, like Hide, and triggers one normal scan. New Findings are underlined as usual; nothing is rephrased automatically. If the user changed the sentence meanwhile, Accept changes nothing and the Card says "The text changed. Try again."
+5. Reject closes the Card and changes nothing.
+6. Without a rewrite, the Card says why above Hide, Rephrase and Ignore: "Engine not running", "Rephrase model isn't ready. See Settings in the popup." (`503`), "Couldn't rephrase without sensitive data. Use Hide." (`409`), "Rephrasing took too long. Try again." (15 s), "Couldn't rephrase. Try again.", or, when the background worker doesn't answer (the extension was rebuilt but not reloaded), "Ghost Agent was updated. Reload it on the extensions page, then this tab."
 
 ### Restore
 
@@ -156,6 +170,10 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 - While `GET /model` isn't `ready`, the popup shows "Names and places are off" under the site row, with a **Download model** button (`POST /model/download`). While it downloads, a progress bar and `312 of about 600 MB`, refreshed every 2 s. If it fails, the error and **Try again**.
 - Settings has a **Name model** section with its state: Off, Downloading, Downloaded or Failed.
 - The new model is used from the next `/detect`; the Engine doesn't need a restart.
+
+### Rephrase model
+
+- Settings has a **Rephrase model** section under Name model, from `GET /rephrase/model`: Not loaded, Loading, Ready, Not downloaded or Failed, with a line on what it means. While it is Not loaded or Loading, the popup asks again every 2 s. A failed load shows its error.
 
 ### Engine down
 

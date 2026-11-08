@@ -62,10 +62,7 @@ const REMEMBERED_ANSWERS = 50;
  * If the call fails, finds nothing and marks the Engine down (no backup detection, spec §3).
  */
 export async function detect(text: string): Promise<Finding[]> {
-  const domain = await selectedDomain.getValue();
-  // The Engine knows only the built-in Domains; one of the user's own is Free plus its words.
-  const words = (await customDomains.getValue())[domain];
-  const body = JSON.stringify(words ? { text, domain: 'free', words } : { text, domain });
+  const body = JSON.stringify({ text, ...(await domainFields()) });
   const remembered = answers.get(body);
   if (remembered) return remembered;
   try {
@@ -86,6 +83,51 @@ export async function detect(text: string): Promise<Finding[]> {
     await engineRunning.setValue(false);
     return [];
   }
+}
+
+/** How long the Card waits for a rephrased sentence (docs/spec.md §3). */
+export const REPHRASE_TIMEOUT_MS = 15_000;
+
+/** Why there is no rephrased sentence; the Card says it in words. */
+export type RephraseFailure = 'engine-down' | 'model-missing' | 'unsafe' | 'timeout' | 'failed';
+export type RephraseResult = { ok: true; text: string } | { ok: false; reason: RephraseFailure };
+
+/**
+ * Asks the Engine's POST /rephrase to rewrite one sentence in the selected Domain.
+ * Never remembered: the user may ask again for another wording.
+ */
+export async function rephrase(sentence: string): Promise<RephraseResult> {
+  try {
+    const response = await fetch(`${ENGINE_URL}/rephrase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sentence, ...(await domainFields()) }),
+      signal: AbortSignal.timeout(REPHRASE_TIMEOUT_MS),
+    });
+    await engineRunning.setValue(true);
+    // Only the status: a 422 body can echo the sentence, and user text is never logged.
+    if (!response.ok) log(`/rephrase answered ${response.status}`);
+    // 503: the model isn't downloaded or didn't load. 409: every rewrite still revealed something.
+    if (response.status === 503) return { ok: false, reason: 'model-missing' };
+    if (response.status === 409) return { ok: false, reason: 'unsafe' };
+    if (!response.ok) return { ok: false, reason: 'failed' };
+    const { text } = await response.json();
+    return typeof text === 'string' && text ? { ok: true, text } : { ok: false, reason: 'failed' };
+  } catch (error) {
+    // A slow model is not a stopped Engine.
+    if (error instanceof DOMException && error.name === 'TimeoutError') return { ok: false, reason: 'timeout' };
+    log(`/rephrase failed: ${error}`);
+    await engineRunning.setValue(false);
+    return { ok: false, reason: 'engine-down' };
+  }
+}
+
+/** The Domain fields of a request. The Engine knows only the built-in Domains; one of the
+ * user's own is Free plus its words. */
+async function domainFields(): Promise<{ domain: string; words?: string[] }> {
+  const domain = await selectedDomain.getValue();
+  const words = (await customDomains.getValue())[domain];
+  return words ? { domain: 'free', words } : { domain };
 }
 
 /**
