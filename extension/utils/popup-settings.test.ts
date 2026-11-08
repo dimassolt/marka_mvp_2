@@ -8,6 +8,7 @@ import religious from '../../engine/src/ghost_engine/data/religious_keywords.txt
 import {
   addSite,
   addWord,
+  blockSend,
   BUILT_IN_DOMAIN_INFO,
   createDomain,
   customDomains,
@@ -40,6 +41,12 @@ describe('built-in Domain info', () => {
 describe('selected Domain', () => {
   it('is the Free Domain until the user picks another', async () => {
     expect(await selectedDomain.getValue()).toBe('free');
+  });
+});
+
+describe('block sending', () => {
+  it('is off until the user switches it on', async () => {
+    expect(await blockSend.getValue()).toBe(false);
   });
 });
 

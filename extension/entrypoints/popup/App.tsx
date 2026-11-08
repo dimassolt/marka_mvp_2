@@ -14,6 +14,7 @@ import {
 import {
   addSite,
   addWord,
+  blockSend,
   BUILT_IN_DOMAIN_INFO,
   BUILT_IN_DOMAINS,
   createDomain,
@@ -522,6 +523,8 @@ function Settings({ onBack, onTour }: { onBack: () => void; onTour: () => void }
   const [site, setSite] = useState('');
   const [model, download] = useModelStatus();
   const rephraseModel = useRephraseModelStatus();
+  const block = useItem(blockSend) ?? false;
+  const [toggled, setToggled] = useState(false);
 
   const submit = async (e: Event) => {
     e.preventDefault();
@@ -576,6 +579,27 @@ function Settings({ onBack, onTour }: { onBack: () => void; onTour: () => void }
             Add
           </button>
         </form>
+      </section>
+      <section class="section">
+        <div class="row">
+          <div class="site__text">
+            <h2 class="heading">Block sending</h2>
+            <p class="hint">Enter and Send wait until every Finding is hidden or ignored.</p>
+          </div>
+          <button
+            type="button"
+            class={toggled ? 'switch switch--animate' : 'switch'}
+            role="switch"
+            aria-checked={block}
+            aria-label="Block sending until every Finding is resolved"
+            onClick={() => {
+              setToggled(true);
+              blockSend.setValue(!block);
+            }}
+          >
+            <span class="switch__knob" />
+          </button>
+        </div>
       </section>
       {model && (
         <section class="section">
@@ -723,7 +747,7 @@ function ModelNotice({
   );
 }
 
-const TOUR_STEPS = 4;
+const TOUR_STEPS = 5;
 
 /**
  * The first-run tour (docs/spec.md, Onboarding): shown the first time the popup opens after
@@ -749,7 +773,8 @@ function Tour({ running, onFinish }: { running: boolean; onFinish: () => void })
       {step === 0 && <TourWelcome />}
       {step === 1 && <TourEngine running={running} />}
       {step === 2 && <TourDomain />}
-      {step === 3 && <TourSites />}
+      {step === 3 && <TourSend />}
+      {step === 4 && <TourSites />}
       <div class="tear" />
       <footer class="tour__footer">
         {step > 0 ? (
@@ -830,6 +855,33 @@ function TourDomain() {
       <p class="hint">
         {isBuiltInDomain(domain) ? BUILT_IN_DOMAIN_INFO[domain].about : 'Your own words, plus the Base checks.'}
       </p>
+    </section>
+  );
+}
+
+/** Whether Enter and Send wait for every Finding (the Block sending switch in Settings). */
+function TourSend() {
+  const block = useItem(blockSend) ?? false;
+  return (
+    <section class="tour__box" role="radiogroup" aria-labelledby="send-title">
+      <h2 id="send-title" class="tour__title">
+        When you send
+      </h2>
+      <label class="tour__choice">
+        <input type="radio" name="send" checked={!block} onChange={() => blockSend.setValue(false)} />
+        <span>
+          <span class="heading">Just underline</span>
+          <span class="hint">You decide what to hide.</span>
+        </span>
+      </label>
+      <label class="tour__choice">
+        <input type="radio" name="send" checked={block} onChange={() => blockSend.setValue(true)} />
+        <span>
+          <span class="heading">Block until resolved</span>
+          <span class="hint">Enter and Send wait until every Finding is hidden or ignored.</span>
+        </span>
+      </label>
+      <p class="hint">Change it any time in Settings.</p>
     </section>
   );
 }

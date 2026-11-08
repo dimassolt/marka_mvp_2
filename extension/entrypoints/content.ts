@@ -1,6 +1,6 @@
 import tokens from '@/assets/tokens.css?raw';
 import { engineRunning, type Finding, type RephraseFailure, type RephraseResult } from '@/utils/engine-status';
-import { customDomains, isSiteOn, pausedSites, selectedDomain, sites } from '@/utils/popup-settings';
+import { blockSend, customDomains, isSiteOn, pausedSites, selectedDomain, sites } from '@/utils/popup-settings';
 import { sentenceAround } from '@/utils/sentence';
 import { colourOf, movedStart, pointAt, type Colour, type Piece } from '@/utils/underlines';
 
@@ -19,6 +19,11 @@ const COPIED_STYLES = [
   'fontKerning', 'lineHeight', 'letterSpacing', 'wordSpacing', 'textAlign', 'textTransform',
   'textIndent', 'tabSize', 'wordBreak', 'overflowWrap',
 ] as const;
+
+/** The mark on a Send button greyed out by Block sending. */
+const HOLD = 'data-ghost-hold';
+/** How many parents up from a field to look for its Send button. */
+const SEND_SEARCH_DEPTH = 8;
 
 /** How long the Card stays after the pointer leaves the Finding, so the pointer can reach it. */
 const CARD_LINGER_MS = 300;
@@ -73,6 +78,12 @@ export default defineContentScript({
     let siteOn = false;
     // The field the user last focused: the Ghost bar shows its Findings.
     let current: HTMLElement | null = null;
+    // Block sending (Settings): Enter and Send wait while a field has Findings or is not scanned yet.
+    let blocking = false;
+    // Each field's text as its last finished scan saw it; any other text is not checked yet.
+    const scanned = new WeakMap<HTMLElement, string>();
+    // A send was blocked before the scan: open the Ghost bar menu once that scan finds something.
+    let menuAfterScan: HTMLElement | null = null;
 
     const schedule = (field: HTMLElement, delay: number) => {
       clearTimeout(timers.get(field));
@@ -165,6 +176,7 @@ export default defineContentScript({
       if (joined(piecesOf(field)) !== text) return schedule(field, TYPING_PAUSE_MS);
 
       texts.set(field, text);
+      scanned.set(field, text);
       underlined.set(
         field,
         findings.flatMap(({ start, end, category, prefix = 'DATA', name = category, group }) => {
@@ -176,6 +188,10 @@ export default defineContentScript({
         }),
       );
       draw();
+      if (menuAfterScan === field) {
+        menuAfterScan = null;
+        if (underlined.get(field)?.length) ui.openMenu();
+      }
     }
 
     /** Hide (spec §3): each value becomes its Placeholder, typed in with the editor's own command. */
@@ -369,6 +385,7 @@ export default defineContentScript({
       if (open) ui.placeCard(open.range.getBoundingClientRect());
       const count = current?.isConnected ? (underlined.get(current)?.length ?? 0) : 0;
       ui.placeBar(count, current && count ? boxAround(current) : null);
+      holdSend(blocking && current && count ? sendButtons(current) : []);
       // Nothing left on screen to keep in place: stop until something wakes the loop again.
       if (!open && !count) {
         placing = false;
@@ -381,6 +398,54 @@ export default defineContentScript({
       placing = true;
       requestAnimationFrame(place);
     };
+
+    // The Send buttons greyed out while Findings wait. Only our mark is set, never `disabled`,
+    // so the site's own state is untouched; the click itself is cancelled below.
+    const held = new Set<HTMLButtonElement>();
+    const holdSend = (buttons: HTMLButtonElement[]) => {
+      for (const b of held) {
+        if (buttons.includes(b)) continue;
+        b.removeAttribute(HOLD);
+        held.delete(b);
+      }
+      for (const b of buttons) {
+        if (!b.hasAttribute(HOLD)) b.setAttribute(HOLD, '');
+        held.add(b);
+      }
+    };
+
+    /** Block sending: the field has Findings, or text the Extension hasn't scanned yet. */
+    const sendBlocked = (field: HTMLElement) =>
+      blocking && siteOn && (!!underlined.get(field)?.length || joined(piecesOf(field)) !== scanned.get(field));
+
+    /** Cancels the send before the site sees it, and shows what is left to resolve. */
+    const stopSend = (e: Event, field: HTMLElement) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (joined(piecesOf(field)) === scanned.get(field)) return ui.openMenu();
+      menuAfterScan = field;
+      schedule(field, 0);
+    };
+
+    // On window, in the capture phase, so these run before the site's own handlers.
+    window.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+        const field = fieldOf(e.target);
+        if (field && sendBlocked(field)) stopSend(e, field);
+      },
+      true,
+    );
+    window.addEventListener(
+      'click',
+      (e) => {
+        const button = e.target instanceof Element ? e.target.closest('button') : null;
+        if (!button || !current || !sendButtons(current).includes(button)) return;
+        if (sendBlocked(current)) stopSend(e, current);
+      },
+      true,
+    );
 
     function hasFindings() {
       for (const list of underlined.values()) if (list.length) return true;
@@ -440,6 +505,13 @@ export default defineContentScript({
     sites.watch(readSiteOn);
     pausedSites.watch(readSiteOn);
     readSiteOn();
+    // Block sending was switched: the loop greys out or frees the Send button on its next frame.
+    const readBlocking = (on: boolean) => {
+      blocking = on;
+      wake();
+    };
+    blockSend.watch(readBlocking);
+    blockSend.getValue().then(readBlocking);
     // The page may have focused its input before this script loaded.
     current = fieldOf(document.activeElement);
     watch(current);
@@ -520,6 +592,7 @@ function createUi() {
     </div>
     <div class="bar" hidden>
       <div class="menu" role="menu" aria-label="Ghost bar" hidden>
+        <p class="note" role="status" hidden>Resolve these to send.</p>
         <button type="button" role="menuitem" data-action="hide-all">Hide all<span class="count"></span></button>
         <button type="button" role="menuitem" data-action="ignore-all">Ignore all<span class="count"></span></button>
         <p class="error" role="alert" hidden>Couldn't hide. Try again.</p>
@@ -533,6 +606,7 @@ function createUi() {
   const stamp = $('.stamp');
   const bar = $('.bar');
   const menu = $('.menu');
+  const note = $('.note');
   const tab = $('.tab');
   const choices = $('.choices');
   const rephraseBox = $('.rephrase');
@@ -541,8 +615,10 @@ function createUi() {
   const decide = $('.decide');
   const errors = root.querySelectorAll<HTMLElement>('.error');
   const showErrors = (show: boolean) => errors.forEach((e) => (e.hidden = !show));
-  const setMenu = (isOpen: boolean) => {
+  /** `blocked`: opened because a send was blocked, so the menu says why. */
+  const setMenu = (isOpen: boolean, blocked = false) => {
     if (menu.hidden !== !isOpen) showErrors(false);
+    note.hidden = !blocked;
     menu.hidden = !isOpen;
     tab.setAttribute('aria-expanded', String(isOpen));
   };
@@ -631,6 +707,10 @@ function createUi() {
     closeMenu() {
       setMenu(false);
     },
+    /** A send was blocked: the menu opens with Hide all and Ignore all, and says why. */
+    openMenu() {
+      setMenu(true, true);
+    },
   };
 }
 
@@ -683,6 +763,7 @@ const UI_STYLES = `
   }
   .error { margin: 0; padding: 0 16px 14px; color: var(--color-cat-id-ink); font-size: var(--text-xs); }
   .menu .error { padding: 4px 10px; }
+  .menu .note { margin: 0; padding: 4px 10px; color: var(--color-muted); font-size: var(--text-xs); }
 
   .bar { position: fixed; display: flex; flex-direction: column; align-items: flex-end; font-family: var(--font-body); }
   .tab {
@@ -707,6 +788,23 @@ const UI_STYLES = `
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 `;
+
+/**
+ * The site's Send button for a field: in the nearest parent that has one, each button labelled
+ * Send (aria-label, title or test id) or of type submit. ChatGPT, Claude and Gemini all say "Send".
+ */
+function sendButtons(field: HTMLElement): HTMLButtonElement[] {
+  let el = field.parentElement;
+  for (let depth = 0; el && el !== document.body && depth < SEND_SEARCH_DEPTH; depth++, el = el.parentElement) {
+    const found = [...el.querySelectorAll('button')].filter(
+      (b) =>
+        b.getAttribute('type') === 'submit' ||
+        /send/i.test(`${b.getAttribute('aria-label') ?? ''} ${b.title} ${b.dataset.testid ?? ''}`),
+    );
+    if (found.length) return found;
+  }
+  return [];
+}
 
 /** The input field around `target`: a <textarea>, or the outermost contenteditable element. */
 function fieldOf(target: EventTarget | null): HTMLElement | null {
@@ -800,9 +898,12 @@ function placeOverlay(field: HTMLTextAreaElement, { box }: Overlay) {
 function addUnderlineStyles() {
   const token = (name: string) => tokens.match(new RegExp(`${name}:\\s*([^;]+);`))?.[1];
   const style = document.createElement('style');
-  style.textContent = COLOURS.map(
-    (colour) =>
-      `::highlight(ghost-${colour}) { text-decoration: underline wavy ${token(`--color-cat-${colour}`)} 1.5px; text-underline-offset: 4px; }`,
-  ).join('\n');
+  style.textContent = [
+    ...COLOURS.map(
+      (colour) =>
+        `::highlight(ghost-${colour}) { text-decoration: underline wavy ${token(`--color-cat-${colour}`)} 1.5px; text-underline-offset: 4px; }`,
+    ),
+    `[${HOLD}] { opacity: 0.4 !important; cursor: not-allowed !important; }`,
+  ].join('\n');
   document.head.append(style);
 }
