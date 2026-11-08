@@ -183,14 +183,12 @@ The rephrase model on this machine: `200 {"state": "ready", "error": null}`.
 
 ### Onboarding
 
-- On a fresh install the Extension opens `onboarding.html` in a new tab. It does not open on an update, or once onboarding is done (`onboardingDone`). Settings in the popup has "Take the welcome tour again".
-- Five steps, with Back and a "n of 5" progress:
-  1. **Welcome:** what Ghost Agent does, and the local promise: text is checked on this computer only, hidden values live in memory only, and nothing changes until the user clicks Hide or accepts a Rephrase. "Skip the tour" finishes onboarding.
-  2. **Engine:** a live status, re-checked every 2 s. While the Engine is down it shows the start command; the user can go on without it. Once it runs and the GLiNER model isn't downloaded, the popup's model box (Download model, then the progress bar) is shown too; the user can go on while it downloads.
-  3. **Domain:** the Base checks, then cards for Free, Health, Education and "Make your own" (name, then words). Every other built-in Domain and the user's own Domains are in a "More Domains" list, so the page keeps its size as Domains are added. Choosing one sets `selectedDomain`, the same setting the popup uses.
-  4. **Try it:** a practice field with real underline colours, the Card and the Ghost bar as they look in a chat (the tab on top of the field, at its right), a hint that Ctrl+Z puts a hidden value back in a chat, and a Restore before/after. The Card has Hide, Rephrase and Ignore; Placeholders follow the Vault rules (one per value, one per person). Rephrase works as in a chat (Rephrasing…, then Accept or Reject; Accept rewrites the practice text) while the Engine runs and the rephrase model is ready; otherwise it is disabled and the Card says why. With the Engine running, the user's own text is checked with the selected Domain; without it, a fixed example is shown. Nothing typed here is saved.
-  5. **Done:** where Ghost Agent works, "Everywhere" (`*`, the default) or "Only sites I choose" (starts from chatgpt.com, claude.ai and gemini.google.com; the same `sites` setting as the popup), then pinning the Extension and the chosen Domain. "Done" sets `onboardingDone` and closes the tab.
-- The screens use `utils/` (settings and Engine calls) and the popup's model hooks and model box, so the tour and the popup show the same states.
+- A four-step tour inside the popup, for new users only. A fresh install marks it pending (`tourPending`); an update never does, so people who already use Ghost Agent don't get it. The popup shows it on its next open, until the user clicks Done or Skip. Nothing opens on install. Settings has "Take the welcome tour again", which shows it in the popup again.
+- The tour comes before the Engine-down view, because its second step starts the Engine. The header shows "n of 4"; the footer has Back (Skip on the first step) and the next step.
+  1. **Welcome:** one sentence, then the local promise: checked on this computer, hidden values in memory only, nothing changes until the user clicks.
+  2. **Engine:** a live status, re-checked every 2 s while the Engine is down, with the start command. The user can go on without it. Once it runs and the GLiNER model isn't downloaded, the popup's model box (Download model, then the progress bar) is shown.
+  3. **Domain:** the popup's Domain select and what the chosen Domain checks. It sets `selectedDomain`.
+  4. **Where:** "Everywhere" (`*`, the default) or "Only sites I choose" (starts from chatgpt.com, claude.ai and gemini.google.com; the same `sites` setting as Settings), then how to pin the Extension and try it in ChatGPT. Done clears `tourPending` and shows the normal popup.
 
 ## 4. Acceptance criteria
 
