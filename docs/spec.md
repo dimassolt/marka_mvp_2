@@ -123,7 +123,7 @@ Starts the download in the background, the same files `scripts/fetch_gliner.py` 
 
 ### Ghost bar
 
-- The Ghost bar is a label tab on the bottom edge of the field the user last focused, while it has at least one Finding. It shows the Finding count.
+- The Ghost bar is a label tab on top of the box around the field the user last focused, while it has at least one Finding. It shows the Finding count.
 - Clicking it shows **Hide all** and **Ignore all**.
 - **Hide all** hides every underlined Finding in the field.
 - **Ignore all** ignores every underlined Finding in the field.

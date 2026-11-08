@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { colourOf, pointAt, type Piece } from './underlines';
+import { colourOf, movedStart, pointAt, type Piece } from './underlines';
 
 describe('pointAt', () => {
   // <p>Hei <b>Kari</b></p><p>fnr 01019000083</p> → "Hei Kari\nfnr 01019000083"
@@ -40,5 +40,20 @@ describe('colourOf', () => {
 
   it('draws a group it does not know teal', () => {
     expect(colourOf('something_new')).toBe('domain');
+  });
+});
+
+describe('movedStart', () => {
+  // "fnr 01019000083" has the Finding at 4–15.
+  it('keeps a Finding in place when the user types after it', () => {
+    expect(movedStart('fnr 01019000083', 'fnr 01019000083 Kari', 4, 15)).toBe(4);
+  });
+
+  it('moves a Finding when the user types before it', () => {
+    expect(movedStart('fnr 01019000083', 'Kari fnr 01019000083', 4, 15)).toBe(9);
+  });
+
+  it('loses a Finding when the user types inside it', () => {
+    expect(movedStart('fnr 01019000083', 'fnr 010190000883', 4, 15)).toBeUndefined();
   });
 });

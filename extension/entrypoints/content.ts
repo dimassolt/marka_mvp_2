@@ -1,7 +1,7 @@
 import tokens from '@/assets/tokens.css?raw';
 import { engineRunning, type Finding } from '@/utils/engine-status';
 import { customDomains, isSiteOn, pausedSites, selectedDomain, sites } from '@/utils/popup-settings';
-import { colourOf, pointAt, type Colour, type Piece } from '@/utils/underlines';
+import { colourOf, movedStart, pointAt, type Colour, type Piece } from '@/utils/underlines';
 
 /** Scan 1 s after the last keystroke (docs/spec.md §3), so typing doesn't send every word. */
 const TYPING_PAUSE_MS = 1000;
@@ -54,6 +54,8 @@ export default defineContentScript({
     const watched = new WeakSet<HTMLElement>();
     const overlays = new WeakMap<HTMLTextAreaElement, Overlay>();
     const timers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+    // Each field's text as the Extension last saw it: what its underlines' offsets count in.
+    const texts = new WeakMap<HTMLElement, string>();
     // Ignored (Category, value) pairs per field, until the message is sent (spec §3, Ignore).
     const ignored = new WeakMap<HTMLElement, Set<string>>();
     // Off until the site settings are read, so no text reaches the Engine on a site switched off.
@@ -69,9 +71,33 @@ export default defineContentScript({
     // An empty field means the message was sent: its values are flagged again (spec §3, Ignore).
     // Checked on every change, since typing the next message may start before the scan runs.
     const changed = (field: HTMLElement) => {
-      const text = field instanceof HTMLTextAreaElement ? field.value : (field.textContent ?? '');
+      const text = joined(piecesOf(field));
       if (!text.trim()) ignored.delete(field);
+      move(field, text);
       schedule(field, TYPING_PAUSE_MS);
+    };
+
+    // The site rewrites the text as the user types, which empties the underlines' Ranges.
+    // Each Finding the edit didn't touch gets a new Range at its moved place, so underlines
+    // don't blink until the next scan; one the user typed inside waits for that scan.
+    const move = (field: HTMLElement, text: string) => {
+      const before = texts.get(field);
+      texts.set(field, text);
+      const list = underlined.get(field);
+      if (before === undefined || before === text || !list?.length) return;
+      const pieces = piecesOf(field);
+      underlined.set(
+        field,
+        list.filter((u) => {
+          const start = movedStart(before, text, u.start, u.end);
+          const range = start === undefined ? undefined : rangeOf(pieces, start, start + u.value.length);
+          if (start === undefined || !range) return false;
+          // Changed in place, so an open Card keeps pointing at its Finding.
+          Object.assign(u, { start, end: start + u.value.length, range });
+          return true;
+        }),
+      );
+      draw();
     };
 
     // Any change in the field, however the site makes it, schedules a scan.
@@ -127,6 +153,7 @@ export default defineContentScript({
       // The user typed while the Engine answered: these offsets are stale. Scan again.
       if (joined(piecesOf(field)) !== text) return schedule(field, TYPING_PAUSE_MS);
 
+      texts.set(field, text);
       underlined.set(
         field,
         findings.flatMap(({ start, end, category, prefix = 'DATA', name = category, group }) => {
@@ -270,6 +297,13 @@ export default defineContentScript({
     // when the Finding is gone.
     // The loop runs only while a Card or the Ghost bar is on screen; a scan or a Card wakes it.
     let placing = false;
+    // The box the user sees around each field, found once (and again if the site rebuilds it).
+    const boxes = new WeakMap<HTMLElement, HTMLElement>();
+    const boxAround = (field: HTMLElement) => {
+      let box = boxes.get(field);
+      if (!box?.isConnected) boxes.set(field, (box = visibleBox(field)));
+      return box;
+    };
     const place = () => {
       if (open) {
         const was = open;
@@ -279,7 +313,7 @@ export default defineContentScript({
       }
       if (open) ui.placeCard(open.range.getBoundingClientRect());
       const count = current?.isConnected ? (underlined.get(current)?.length ?? 0) : 0;
-      ui.placeBar(count, current && count ? current.getBoundingClientRect() : null);
+      ui.placeBar(count, current && count ? boxAround(current) : null);
       // Nothing left on screen to keep in place: stop until something wakes the loop again.
       if (!open && !count) {
         placing = false;
@@ -483,13 +517,18 @@ function createUi() {
       card.style.left = `${left}px`;
       card.style.top = `${above >= CARD_GAP_PX ? above : at.bottom + CARD_GAP_PX}px`;
     },
-    /** On the field's bottom edge, at its right; gone at 0 (docs/design.md, Ghost bar). */
-    placeBar(count: number, field: DOMRect | null) {
-      bar.hidden = !field;
-      if (!field) return setMenu(false);
+    /**
+     * On top of the field's box, outside it, at its right, so it covers neither the text nor
+     * the site's buttons; clear of a rounded corner. Gone at 0 (docs/design.md, Ghost bar).
+     */
+    placeBar(count: number, box: HTMLElement | null) {
+      bar.hidden = !box;
+      if (!box) return setMenu(false);
       for (const c of root.querySelectorAll('.count')) if (c.textContent !== String(count)) c.textContent = String(count);
-      bar.style.right = `${innerWidth - field.right + CARD_GAP_PX}px`;
-      bar.style.top = `${field.bottom - tab.offsetHeight}px`;
+      const rect = box.getBoundingClientRect();
+      const corner = parseFloat(getComputedStyle(box).borderTopRightRadius) || 0;
+      bar.style.right = `${innerWidth - rect.right + Math.max(CARD_GAP_PX, corner)}px`;
+      bar.style.top = `${rect.top - tab.offsetHeight}px`;
     },
     closeMenu() {
       setMenu(false);
@@ -505,7 +544,7 @@ const UI_STYLES = `
   button:disabled { cursor: default; opacity: 0.5; }
 
   .card {
-    position: fixed; width: ${CARD_WIDTH_PX}px; box-sizing: border-box;
+    position: fixed; z-index: 1; width: ${CARD_WIDTH_PX}px; box-sizing: border-box;
     display: flex; flex-direction: column;
     background: var(--color-paper-2); color: var(--color-ink); border-radius: var(--radius-card);
     box-shadow: var(--shadow-lift); font: 400 var(--text-sm) / 1.4 var(--font-body);
@@ -563,6 +602,19 @@ function fieldOf(target: EventTarget | null): HTMLElement | null {
   let root = target;
   while (root.parentElement?.isContentEditable) root = root.parentElement;
   return root;
+}
+
+/**
+ * The box the user sees around a field: the field itself, or its nearest parent with a
+ * background, border or shadow. In ChatGPT the field is only the text; the rounded box is a parent.
+ */
+function visibleBox(field: HTMLElement): HTMLElement {
+  for (let el: HTMLElement | null = field; el && el !== document.body; el = el.parentElement) {
+    const style = getComputedStyle(el);
+    const background = style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)';
+    if (background || parseFloat(style.borderTopWidth) > 0 || style.boxShadow !== 'none') return el;
+  }
+  return field;
 }
 
 /** The field's text nodes in order, with a line break between paragraphs and at each <br>. */
